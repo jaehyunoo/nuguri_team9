@@ -34,6 +34,7 @@ int score = 0;
 int is_jumping = 0;
 int velocity_y = 0;
 int on_ladder = 0;
+int user_Heart = 3;
 
 // 게임 객체
 Enemy enemies[MAX_ENEMIES];
@@ -89,6 +90,14 @@ int main() {
         draw_game();
         usleep(90000);
 
+
+        if(user_Heart==0)
+        {
+            printf("\x1b[2J\x1b[H");
+            printf("Game Over!\n");
+            exit(0);
+        }
+        
         if (map[stage][player_y][player_x] == 'E') {
             stage++;
             score += 100;
@@ -169,7 +178,7 @@ void init_stage() {
 // 게임 화면 그리기
 void draw_game() {
     printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d\n", stage + 1, score);
+    printf("Stage: %d | Score: %d Heart: %d\n", stage + 1, score,user_Heart);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 
     char display_map[MAP_HEIGHT][MAP_WIDTH + 1];
@@ -286,6 +295,7 @@ void check_collisions() {
     for (int i = 0; i < enemy_count; i++) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             score = (score > 50) ? score - 50 : 0;
+            user_Heart--;
             init_stage();
             return;
         }

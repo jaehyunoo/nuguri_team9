@@ -1,10 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#ifdef _WIN32 //윈도우전용 헤더 <수정된 부분>
+#include <windows.h>  
+#include <conio.h>  
+
+#else// 리눅스 전용 헤더
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
-#include <time.h>
+#endif 
 
 // 맵 및 게임 요소 정의 (수정된 부분)
 #define MAP_WIDTH 40  // 맵 너비를 40으로 변경
@@ -16,7 +23,7 @@
 // 구조체 정의
 typedef struct {
     int x, y;
-    int dir; // 1: right, -1: lefㅅ
+    int dir; // 1: right, -1: left
 } Enemy;
 
 typedef struct {
@@ -42,7 +49,12 @@ Coin coins[MAX_COINS];
 int coin_count = 0;
 
 // 터미널 설정
+//disable_raw_mode()함수에서 콘솔상태 저장 변수 분기 <수정된 부분>
+#ifdef _WIN32
+static DWORD original_mode;
+#else
 struct termios orig_termios;
+#endif
 
 // 함수 선언
 void disable_raw_mode();
@@ -55,6 +67,15 @@ void move_player(char input);
 void move_enemies();
 void check_collisions();
 int kbhit();
+
+//delay함수 윈도우,리눅스용 분기 나눔<수정된 부분>
+void delay(int ms) {
+#ifdef _WIN32
+  Sleep(ms);      // Windows: 밀리초 단위
+#else
+    usleep(ms * 1000); // Linux/macOS: 마이크로초 단위 1밀리초 = 1000 마이크로초
+#endif
+}
 
 int main() {
     srand(time(NULL));
@@ -87,8 +108,10 @@ int main() {
 
         update_game(c);
         draw_game();
-        usleep(90000);
 
+        delay(90); //원래 usleep(90000); 이였으나 윈도우애서 사용하기위해 분기가 되어있는 delay함수로 변경 <수정된 부분>
+
+ 
         if (map[stage][player_y][player_x] == 'E') {
             stage++;
             score += 100;
@@ -109,13 +132,34 @@ int main() {
 
 
 // 터미널 Raw 모드 활성화/비활성화
-void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
+//disable_raw_mode()함수 분기 <수정된 부분>
+void disable_raw_mode() { 
+
+    #ifdef _WIN32
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleMode(hStdin, original_mode);
+    #else
+
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    #endif
+ }
+ //enable_raw_mode()함수 분기 <수정된 부분>
 void enable_raw_mode() {
+
+    #ifdef _WIN32
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode;
+    GetConsoleMode(hStdin, &mode);
+    mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    SetConsoleMode(hStdin, mode);
+
+    #else
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
     raw.c_lflag &= ~(ECHO | ICANON);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    #endif
 }
 
 // 맵 파일 로드
@@ -299,6 +343,8 @@ void check_collisions() {
 }
 
 // 비동기 키보드 입력 확인
+// kbhit()함수 윈도우는 <conio.h>에 있으므로 리눅스에서만 정의<수정된 부분>
+#ifndef _WIN32
 int kbhit() {
     struct termios oldt, newt;
     int ch;
@@ -318,3 +364,4 @@ int kbhit() {
     }
     return 0;
 }
+#endif

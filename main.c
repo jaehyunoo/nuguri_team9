@@ -251,7 +251,8 @@ void move_player(char input) {
         }
     } 
     else {
-    if (is_jumping) {//점프했을때 문제 해결해야함-> 점프했을때 위에 함정있을때랑 벽있을때를 구분해야함.
+    if (is_jumping) {//점프했을때 만약 위에 #이있을경우 부딫히고 아래로 내려갈떄 #이 통과되는 오류를 해결 velocity_y>0때 조건문으로
+                        //비교할수있게 수정함.
 
         next_y = player_y + velocity_y;
         if (next_y < 0) next_y = 0;
@@ -278,6 +279,20 @@ void move_player(char input) {
                 }
             }
         }
+        else if (velocity_y > 0) {
+        int y_from = player_y + 1;    
+        int y_to   = next_y;
+        if (y_to >= MAP_HEIGHT) y_to = MAP_HEIGHT - 1;
+
+        for (int y = y_from; y <= y_to; y++) {
+            char tile = map[stage][y][player_x];
+
+            if (tile == '#') {
+                next_y = y - 1;
+                break;
+            }
+        }
+    }
 
         velocity_y++;
 

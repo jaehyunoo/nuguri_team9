@@ -273,7 +273,11 @@ void move_player(char input) {
                 }
 
        
-                if (tile == '#') {
+                if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
+                    if (on_ladder && y + 1 < MAP_HEIGHT && 
+                        map[stage][y + 1][player_x] == 'H') {
+                            continue;
+                        }
                     next_y = y + 1;  
                     break;
                 }

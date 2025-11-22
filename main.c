@@ -234,7 +234,7 @@ void move_player(char input) {
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
-            if (!is_jumping && (floor_tile == '#' || on_ladder)) {
+            if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -2;
             }
@@ -251,28 +251,54 @@ void move_player(char input) {
         }
     } 
     else {
-        if (is_jumping) {
-            next_y = player_y + velocity_y;
-            if(next_y < 0) next_y = 0;
-            velocity_y++;
+    if (is_jumping) {//점프했을때 문제 해결해야함-> 점프했을때 위에 함정있을때랑 벽있을때를 구분해야함.
 
-            if (velocity_y < 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#') {
-                velocity_y = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                player_y = next_y;
-            }
-            
-            if ((player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] == '#') {
-                is_jumping = 0;
-                velocity_y = 0;
-            }
-        } else {
-            if (floor_tile != '#' && floor_tile != 'H') {
-                 if (player_y + 1 < MAP_HEIGHT) player_y++;
-                 else init_stage();
+        next_y = player_y + velocity_y;
+        if (next_y < 0) next_y = 0;
+
+
+        if (velocity_y < 0) {
+            int y_from = player_y - 1; 
+            int y_to   = next_y;         
+            if (y_to < 0) y_to = 0;
+
+            for (int y = y_from; y >= y_to; y--) {
+                char tile = map[stage][y][player_x];
+
+                if (tile == 'X') {
+                    user_Heart--;
+                    init_stage();
+                    return;  
+                }
+
+       
+                if (tile == '#') {
+                    next_y = y + 1;  
+                    break;
+                }
             }
         }
+
+        velocity_y++;
+
+
+        if (next_y < MAP_HEIGHT) {
+            player_y = next_y;
+        }
+
+ 
+        if (player_y + 1 < MAP_HEIGHT &&
+            map[stage][player_y + 1][player_x] == '#') {
+            is_jumping = 0;
+            velocity_y = 0;
+        }
+    } else {
+        if (floor_tile != '#' && floor_tile != 'H') {
+             if (player_y + 1 < MAP_HEIGHT) player_y++;
+             else init_stage();
+        }
     }
+}
     
     if (player_y >= MAP_HEIGHT) init_stage();
 }

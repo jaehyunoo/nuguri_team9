@@ -55,8 +55,10 @@ void move_player(char input);
 void move_enemies();
 void check_collisions();
 int kbhit();
+void opening(); //수정됨 게임 시작시 화면 띄우기
 
 int main() {
+    opening();
     srand(time(NULL));
     enable_raw_mode();
     load_maps();
@@ -107,6 +109,29 @@ int main() {
     return 0;
 }
 
+void opening(){
+    while(1){
+        int ch=0;
+        printf("\n\n\n\n\n");
+        printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                NUGURI GAME               ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃              Press P to play             ┃");
+        printf("\n           ┃              other keys to quit          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
+        ch = getchar();
+        if (ch == 'P' || ch == 'p')
+            return;
+        else 
+            exit(0);
+    }
+}
+        
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }

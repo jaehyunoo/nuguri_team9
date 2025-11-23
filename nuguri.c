@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <locale.h> //setlocale 및 LC_ALL 사용을 위해// 글자 깨짐 방지 <새로 추가한 헤더>
 
 #ifdef _WIN32 //윈도우전용 헤더 <수정된 부분>
 #include <windows.h>  
@@ -41,6 +42,7 @@ int score = 0;
 int is_jumping = 0;
 int velocity_y = 0;
 int on_ladder = 0;
+int user_Heart = 3;
 
 // 게임 객체
 Enemy enemies[MAX_ENEMIES];
@@ -68,7 +70,7 @@ void move_enemies();
 void check_collisions();
 int kbhit();
 
-//delay함수 윈도우,리눅스용 분기 나눔<수정된 부분>
+//delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
 void delay(int ms) {
 #ifdef _WIN32
   Sleep(ms);      // Windows: 밀리초 단위
@@ -78,6 +80,15 @@ void delay(int ms) {
 }
 
 int main() {
+
+    //한국어 로케일 설정, c언어 에서 한글 입출력을 정상적으로 처리하기 위해서 <수정된 부분>
+    setlocale(LC_ALL, "ko_KR.UTF-8");
+
+    //윈도우에서 글자 깨짐 방지 <수정된 부분 >
+    #ifndef _WIN32
+    system("chcp 65001");
+    #endif
+
     srand(time(NULL));
     enable_raw_mode();
     load_maps();
@@ -110,7 +121,13 @@ int main() {
         draw_game();
 
         delay(90); //원래 usleep(90000); 이였으나 윈도우애서 사용하기위해 분기가 되어있는 delay함수로 변경 <수정된 부분>
-
+ 
+        if(user_Heart==0)
+        {
+            printf("\x1b[2J\x1b[H");
+            printf("Game Over!\n");
+            exit(0);
+        }
  
         if (map[stage][player_y][player_x] == 'E') {
             stage++;
@@ -212,8 +229,16 @@ void init_stage() {
 
 // 게임 화면 그리기
 void draw_game() {
-    printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d\n", stage + 1, score);
+
+    // printf("\x1b[2J\x1b[H"); 분기 <수정된 부분>
+    #ifdef _WIN32
+        printf("\x1b[H"); // 커서만 이동, 윈도우에서 화면 깜빡임 현상 때문에 화면 지우기 제거 <수정된 부분>
+    #else
+    // 리눅스/맥 에서는 화면을 지우고 커서 이동을 계속 사용합니다.
+        printf("\x1b[2J\x1b[H"); 
+    #endif
+
+    printf("Stage: %d | Score: %d Heart: %d\n", stage + 1, score, user_Heart);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 
     char display_map[MAP_HEIGHT][MAP_WIDTH + 1];
@@ -269,7 +294,7 @@ void move_player(char input) {
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
-            if (!is_jumping && (floor_tile == '#' || on_ladder)) {
+            if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -2;
             }
@@ -286,28 +311,73 @@ void move_player(char input) {
         }
     } 
     else {
-        if (is_jumping) {
-            next_y = player_y + velocity_y;
-            if(next_y < 0) next_y = 0;
-            velocity_y++;
+    if (is_jumping) {//점프했을때 만약 위에 #이있을경우 부딫히고 아래로 내려갈떄 #이 통과되는 오류를 해결 velocity_y>0때 조건문으로
+                        //비교할수있게 수정함.
 
-            if (velocity_y < 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#') {
-                velocity_y = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                player_y = next_y;
+        next_y = player_y + velocity_y;
+        if (next_y < 0) next_y = 0;
+
+
+        if (velocity_y < 0) {
+            int y_from = player_y - 1; 
+            int y_to   = next_y;         
+            if (y_to < 0) y_to = 0;
+
+            for (int y = y_from; y >= y_to; y--) {
+                char tile = map[stage][y][player_x];
+
+                if (tile == 'X') {
+                    user_Heart--;
+                    init_stage();
+                    return;  
+                }
+
+       
+                if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
+                    if (on_ladder && y + 1 < MAP_HEIGHT && 
+                        map[stage][y + 1][player_x] == 'H') {
+                            continue;
+                        }
+                    next_y = y + 1;  
+                    break;
+                }
             }
-            
-            if ((player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] == '#') {
-                is_jumping = 0;
-                velocity_y = 0;
-            }
-        } else {
-            if (floor_tile != '#' && floor_tile != 'H') {
-                 if (player_y + 1 < MAP_HEIGHT) player_y++;
-                 else init_stage();
+        }
+        else if (velocity_y > 0) {
+        int y_from = player_y + 1;    
+        int y_to   = next_y;
+        if (y_to >= MAP_HEIGHT) y_to = MAP_HEIGHT - 1;
+
+        for (int y = y_from; y <= y_to; y++) {
+            char tile = map[stage][y][player_x];
+
+            if (tile == '#') {
+                next_y = y - 1;
+                break;
             }
         }
     }
+
+        velocity_y++;
+
+
+        if (next_y < MAP_HEIGHT) {
+            player_y = next_y;
+        }
+
+ 
+        if (player_y + 1 < MAP_HEIGHT &&
+            map[stage][player_y + 1][player_x] == '#') {
+            is_jumping = 0;
+            velocity_y = 0;
+        }
+    } else {
+        if (floor_tile != '#' && floor_tile != 'H') {
+             if (player_y + 1 < MAP_HEIGHT) player_y++;
+             else init_stage();
+        }
+    }
+}
     
     if (player_y >= MAP_HEIGHT) init_stage();
 }

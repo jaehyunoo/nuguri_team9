@@ -54,6 +54,8 @@ void update_game(char input);
 void move_player(char input);
 void move_enemies();
 void check_collisions();
+void game_overscr();
+void game_clear();
 int kbhit();
 
 int main() {
@@ -104,6 +106,7 @@ int main() {
     }
 
     disable_raw_mode();
+    game_overscr();
     return 0;
 }
 
@@ -199,7 +202,7 @@ void draw_game() {
     for (int y = 0; y < MAP_HEIGHT; y++) {
         for(int x=0; x< MAP_WIDTH; x++){
             printf("%c", display_map[y][x]);
-        }햣
+        }
         printf("\n");
     }
 }
@@ -277,6 +280,27 @@ void move_enemies() {
             enemies[i].dir *= -1;
         } else {
             enemies[i].x = next_x;
+        }
+    }
+}
+
+void game_overscr(){
+    printf("\x1b[2J\x1b[H");
+    printf("gameover\n");
+    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
+    char c;
+    while (1) {
+        c = getchar();
+        if (c == 'y' || c == 'Y') {
+            stage = 0;
+            score = 0;
+            init_stage();
+            main();
+            return;
+        }
+        if (c == 'n' || c == 'N') {
+            printf("\n게임을 종료합니다.\n");
+            exit(0);
         }
     }
 }

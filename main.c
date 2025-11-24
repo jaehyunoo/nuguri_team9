@@ -63,17 +63,19 @@ int main() {
     load_maps();
     init_stage();
 
-    char c = '\0';
+    
     int game_over = 0;
 
     while (!game_over && stage < MAX_STAGES) {
-        if (kbhit()) {
-            c = getchar();
-            if (c == 'q') {
+
+        char c = '\0';
+        while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
+            int chr = getchar();
+            if (chr == 'q') {
                 game_over = 1;
-                continue;
+                break;
             }
-            if (c == '\x1b') {
+            if (chr == '\x1b') {
                 getchar(); // '['
                 switch (getchar()) {
                     case 'A': c = 'w'; break; // Up
@@ -82,8 +84,14 @@ int main() {
                     case 'D': c = 'a'; break; // Left
                 }
             }
-        } else {
-            c = '\0';
+            else {
+            c = chr;
+            }
+        } 
+
+        if(game_over==1)
+        {
+            break;
         }
 
         update_game(c);
@@ -315,9 +323,9 @@ void move_player(char input) {
         if (floor_tile != '#' && floor_tile != 'H') {
              if (player_y + 1 < MAP_HEIGHT) player_y++;
              else init_stage();
+            }
         }
-    }
-}
+  }
     
     if (player_y >= MAP_HEIGHT) init_stage();
 }

@@ -79,14 +79,26 @@ void delay(int ms) {
 #endif
 }
 
+//윈도우에서 커서 숨기기 <새로 추가한 함수>
+void hide_cursor() {
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO info;
+    info.dwSize = 1;
+    info.bVisible = FALSE;
+    SetConsoleCursorInfo(console, &info);
+}
+
 int main() {
 
     //한국어 로케일 설정, c언어 에서 한글 입출력을 정상적으로 처리하기 위해서 <수정된 부분>
     setlocale(LC_ALL, "ko_KR.UTF-8");
 
     //윈도우에서 글자 깨짐 방지 <수정된 부분 >
-    #ifndef _WIN32
+    #ifdef _WIN32
     system("chcp 65001");
+  
+    //윈도우에서 커서 숨기기 <수정된 부분 >
+    hide_cursor();
     #endif
 
     srand(time(NULL));

@@ -56,7 +56,8 @@ void move_enemies();
 void check_collisions();
 int kbhit();
 void opening(); //수정됨 게임 시작시 화면 띄우기
-
+void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
+void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 int main() {
     opening();
     srand(time(NULL));
@@ -98,7 +99,7 @@ int main() {
                 init_stage();
             } else {
                 game_over = 1;
-                printf("\x1b[2J\x1b[H");
+                clrscr();
                 printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
                 printf("최종 점수: %d\n", score);
             }
@@ -110,6 +111,7 @@ int main() {
 }
 
 void opening(){
+    clrscr();
     while(1){
         int ch=0;
         printf("\n\n\n\n\n");
@@ -124,6 +126,7 @@ void opening(){
         printf("\n           ┃                                          ┃");
         printf("\n           ┃                                          ┃");
         printf("\n           ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
+        gotoxy(30, 15);
         ch = getchar();
         if (ch == 'P' || ch == 'p')
             return;
@@ -131,7 +134,17 @@ void opening(){
             exit(0);
     }
 }
-        
+
+void clrscr(){
+    printf("\x1b[2J\x1b[H");
+    fflush(stdout);
+}
+
+void gotoxy(int x, int y){
+    printf("\x1b[%d;%dH", y, x);
+    fflush(stdout);
+}
+
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
@@ -193,7 +206,7 @@ void init_stage() {
 
 // 게임 화면 그리기
 void draw_game() {
-    printf("\x1b[2J\x1b[H");
+    clrscr();
     printf("Stage: %d | Score: %d\n", stage + 1, score);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 

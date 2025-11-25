@@ -423,12 +423,11 @@ void move_player(char input) {
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
             if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
-            if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -2;
-            }
             break;
-    }
+        }
+     }
 
     if (next_x >= 0 && next_x < MAP_WIDTH && map[stage][player_y][next_x] != '#') player_x = next_x;
     
@@ -506,31 +505,8 @@ void move_player(char input) {
              else init_stage();
         }
     }
-}
-        if (is_jumping) {
-            next_y = player_y + velocity_y;
-            if(next_y < 0) next_y = 0;
-            velocity_y++;
-
-            if (velocity_y < 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#') {
-                velocity_y = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                player_y = next_y;
-            }
-            
-            if ((player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] == '#') {
-                is_jumping = 0;
-                velocity_y = 0;
-            }
-        } else {
-            if (floor_tile != '#' && floor_tile != 'H') {
-                 if (player_y + 1 < MAP_HEIGHT) player_y++;
-                 else init_stage();
-            }
-        }
-    }
-    
-    if (player_y >= MAP_HEIGHT) init_stage();
+  }
+  if (player_y >= MAP_HEIGHT) init_stage();
 }
 
 

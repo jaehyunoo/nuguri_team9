@@ -55,6 +55,8 @@ void update_game(char input);
 void move_player(char input);
 void move_enemies();
 void check_collisions();
+void game_overscr();
+void game_clear();
 int kbhit();
 
 int main() {
@@ -105,9 +107,7 @@ int main() {
                 init_stage();
             } else {
                 game_over = 1;
-                printf("\x1b[2J\x1b[H");
-                printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
-                printf("최종 점수: %d\n", score);
+                game_clear();
             }
         }
     }
@@ -331,6 +331,50 @@ void move_enemies() {
             enemies[i].dir *= -1;
         } else {
             enemies[i].x = next_x;
+        }
+    }
+}
+
+
+void game_overscr(){
+    printf("\x1b[2J\x1b[H");
+    printf("gameover\n");
+    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
+    char c;
+    while (1) {
+        c = getchar();
+        if (c == 'y' || c == 'Y') {
+            stage = 0;
+            score = 0;
+            init_stage();
+            main();
+            return;
+        }
+        if (c == 'n' || c == 'N') {
+            printf("\n게임을 종료합니다.\n");
+            exit(0);
+        }
+    }
+}
+
+void game_clear(){
+    printf("\x1b[2J\x1b[H");
+    printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
+    printf("최종 점수: %d\n", score);
+    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
+    char c;
+    while (1) {
+        c = getchar();
+        if (c == 'y' || c == 'Y') {
+            stage = 0;
+            score = 0;
+            init_stage();
+            main();
+            return;
+        }
+        if (c == 'n' || c == 'N') {
+            printf("\n게임을 종료합니다.\n");
+            exit(0);
         }
     }
 }

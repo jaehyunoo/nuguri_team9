@@ -34,7 +34,6 @@ int score = 0;
 int is_jumping = 0;
 int velocity_y = 0;
 int on_ladder = 0;
-int user_Heart = 3;
 
 // 게임 객체
 Enemy enemies[MAX_ENEMIES];
@@ -55,12 +54,6 @@ void update_game(char input);
 void move_player(char input);
 void move_enemies();
 void check_collisions();
-void game_overscr();
-void game_clear1();
-void game_clear2();
-int kbhit();
-
-int main() {
 int kbhit();
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
@@ -100,33 +93,12 @@ int main() {
         draw_game();
         usleep(90000);
 
-
-        if(user_Heart==0)
-        {
-            game_overscr();
-            exit(0);
-        }
-        
-        if (map[stage][player_y][player_x] == 'E') {
-            // stage++;
-            score += 100;
-            /*
         if (map[stage][player_y][player_x] == 'E') {
             stage++;
             score += 100;
             if (stage < MAX_STAGES) {
                 init_stage();
             } else {
-                game_over = 1;
-                game_clear();
-            }
-            */
-            if (stage + 1 < MAX_STAGES) {
-                stage++;
-                init_stage();
-                game_clear1(); // 첫 스테이지 클리어 메시지
-            } else {
-                game_clear2(); // 마지막 스테이지 클리어
                 game_over = 1;
                 clrscr();
                 printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
@@ -183,7 +155,7 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
         fflush(stdout);
         break;
 
-        case 2: //수정됨 점프, 사다리 이동시
+        case 2: //수정됨 점프시
         printf("\a");
         fflush(stdout);
 
@@ -194,33 +166,6 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
 
         default:
         return;
-    }
-}
-
-/*
-윈도우 버전 window.h 필요
-void beepsound(int sel){
-    switch(sel){
-        case 1:
-        beep();
-        break;
-        
-        case 2:
-        beep();
-        break;
-        
-}
-
-*/
-
-void sizecheck(){
-    FILE *file = fopen("map.txt", "r");
-    if (!file) {
-        perror("map.txt 파일을 열 수 없습니다.");
-        exit(1);
-    }
-    while(true){
-        if scanf()
     }
 }
 
@@ -284,8 +229,6 @@ void init_stage() {
 
 // 게임 화면 그리기
 void draw_game() {
-    printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d Heart: %d\n", stage + 1, score,user_Heart);
     clrscr();
     printf("Stage: %d | Score: %d\n", stage + 1, score);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
@@ -343,7 +286,6 @@ void move_player(char input) {
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
-            if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
             if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -2;
@@ -361,73 +303,6 @@ void move_player(char input) {
         }
     } 
     else {
-    if (is_jumping) {//점프했을때 만약 위에 #이있을경우 부딫히고 아래로 내려갈떄 #이 통과되는 오류를 해결 velocity_y>0때 조건문으로
-                        //비교할수있게 수정함.
-
-        next_y = player_y + velocity_y;
-        if (next_y < 0) next_y = 0;
-
-
-        if (velocity_y < 0) {
-            int y_from = player_y - 1; 
-            int y_to   = next_y;         
-            if (y_to < 0) y_to = 0;
-
-            for (int y = y_from; y >= y_to; y--) {
-                char tile = map[stage][y][player_x];
-
-                if (tile == 'X') {
-                    user_Heart--;
-                    init_stage();
-                    return;  
-                }
-
-       
-                if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
-                    if (on_ladder && y + 1 < MAP_HEIGHT && 
-                        map[stage][y + 1][player_x] == 'H') {
-                            continue;
-                        }
-                    next_y = y + 1;  
-                    break;
-                }
-            }
-        }
-        else if (velocity_y > 0) {
-        int y_from = player_y + 1;    
-        int y_to   = next_y;
-        if (y_to >= MAP_HEIGHT) y_to = MAP_HEIGHT - 1;
-
-        for (int y = y_from; y <= y_to; y++) {
-            char tile = map[stage][y][player_x];
-
-            if (tile == '#') {
-                next_y = y - 1;
-                break;
-            }
-        }
-    }
-
-        velocity_y++;
-
-
-        if (next_y < MAP_HEIGHT) {
-            player_y = next_y;
-        }
-
- 
-        if (player_y + 1 < MAP_HEIGHT &&
-            map[stage][player_y + 1][player_x] == '#') {
-            is_jumping = 0;
-            velocity_y = 0;
-        }
-    } else {
-        if (floor_tile != '#' && floor_tile != 'H') {
-             if (player_y + 1 < MAP_HEIGHT) player_y++;
-             else init_stage();
-        }
-    }
-}
         if (is_jumping) {
             next_y = player_y + velocity_y;
             if(next_y < 0) next_y = 0;
@@ -467,79 +342,11 @@ void move_enemies() {
     }
 }
 
-
-void game_overscr(){
-    printf("\x1b[2J\x1b[H");
-    printf("gameover\n");
-    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
-    char c;
-    while (1) {
-        c = getchar();
-        if (c == 'y' || c == 'Y') {
-            stage = 0;
-            score = 0;
-            user_Heart = 3;
-            main();
-            return;
-        }
-        if (c == 'n' || c == 'N') {
-            printf("\n게임을 종료합니다.\n");
-            exit(0);
-        }
-    }
-}
-
-void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
-    printf("\x1b[2J\x1b[H");
-    printf("첫 번째 스테이지를 클리어했습니다!\n");
-    printf("현재 점수: %d\n", score);
-    printf("다음 스테이지를 시작하시겠습니까? 네(y),아니요(n)");
-    char c;
-    while (1) {
-        c = getchar();
-        if (c == 'y' || c == 'Y') {
-            // stage = 0;
-            // score = 0;
-            init_stage();
-            // main();
-            return;
-        }
-        if (c == 'n' || c == 'N') {
-            printf("\n게임을 종료합니다.\n");
-            exit(0);
-        }
-    }
-}
-
-void game_clear2(){
-    printf("\x1b[2J\x1b[H");
-    printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
-    printf("최종 점수: %d\n", score);
-    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
-    char c;
-    while (1) {
-        c = getchar();
-        if (c == 'y' || c == 'Y') {
-            stage = 0;
-            score = 0;
-            user_Heart = 3;
-            // init_stage();
-            main();
-            return;
-        }
-        if (c == 'n' || c == 'N') {
-            printf("\n게임을 종료합니다.\n");
-            exit(0);
-        }
-    }
-}
-
 // 충돌 감지 로직
 void check_collisions() {
     for (int i = 0; i < enemy_count; i++) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             score = (score > 50) ? score - 50 : 0;
-            user_Heart--;
             init_stage();
             return;
         }
@@ -571,5 +378,4 @@ int kbhit() {
         return 1;
     }
     return 0;
-}
 }

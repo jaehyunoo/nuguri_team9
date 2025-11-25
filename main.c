@@ -221,8 +221,8 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
         fflush(stdout);
 
         case 3:
-        printf("\a") //수정됨 스테이지 이동시
-        printf("\a")
+        printf("\a"); //수정됨 스테이지 이동시
+        printf("\a");
         fflush(stdout);
 
         default:
@@ -252,7 +252,7 @@ void sizecheck(){
         perror("map.txt 파일을 열 수 없습니다.");
         exit(1);
     }
-    while(true){
+    while(1){
         if scanf()
     }
 }
@@ -281,7 +281,6 @@ void enable_raw_mode() {
     SetConsoleMode(hStdin, mode);
 
     #else
->>>>>>> seram
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;

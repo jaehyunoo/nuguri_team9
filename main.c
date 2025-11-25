@@ -231,7 +231,6 @@ void update_game(char input) {
 // 플레이어 이동 로직
 void move_player(char input) {
     int next_x = player_x, next_y = player_y;
-    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';
     char current_tile = map[stage][player_y][player_x];
 
     on_ladder = (current_tile == 'H');
@@ -241,15 +240,21 @@ void move_player(char input) {
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
-        case ' ':
-            if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
-                is_jumping = 1;
-                velocity_y = -2;
-            }
-            break;
     }
 
     if (next_x >= 0 && next_x < MAP_WIDTH && map[stage][player_y][next_x] != '#') player_x = next_x;
+
+    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
+                                                                                            //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
+
+    
+    if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
+        if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
+            is_jumping = 1;
+            velocity_y = -2;
+        }
+    }
+    
     
     if (on_ladder && (input == 'w' || input == 's')) {
         if(next_y >= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] != '#') {

@@ -169,6 +169,22 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
     }
 }
 
+/*
+윈도우 버전 window.h 필요
+void beepsound(int sel){
+    switch(sel){
+        case 1:
+        beep();
+        break;
+        
+        case 2:
+        beep();
+        break;
+        
+}
+
+*/
+
 void sizecheck(){
     FILE *file = fopen("map.txt", "r");
     if (!file) {

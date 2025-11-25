@@ -56,7 +56,8 @@ void move_player(char input);
 void move_enemies();
 void check_collisions();
 void game_overscr();
-void game_clear();
+void game_clear1();
+void game_clear2();
 int kbhit();
 
 int main() {
@@ -95,19 +96,28 @@ int main() {
 
         if(user_Heart==0)
         {
-            printf("\x1b[2J\x1b[H");
-            printf("Game Over!\n");
+            game_overscr();
             exit(0);
         }
         
         if (map[stage][player_y][player_x] == 'E') {
-            stage++;
+            // stage++;
             score += 100;
+            /*
             if (stage < MAX_STAGES) {
                 init_stage();
             } else {
                 game_over = 1;
                 game_clear();
+            }
+            */
+            if (stage + 1 < MAX_STAGES) {
+                stage++;
+                init_stage();
+                game_clear1(); // 첫 스테이지 클리어 메시지
+            } else {
+                game_clear2(); // 마지막 스테이지 클리어
+                game_over = 1;
             }
         }
     }
@@ -346,7 +356,7 @@ void game_overscr(){
         if (c == 'y' || c == 'Y') {
             stage = 0;
             score = 0;
-            init_stage();
+            user_Heart = 3;
             main();
             return;
         }
@@ -357,7 +367,29 @@ void game_overscr(){
     }
 }
 
-void game_clear(){
+void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
+    printf("\x1b[2J\x1b[H");
+    printf("첫 번째 스테이지를 클리어했습니다!\n");
+    printf("현재 점수: %d\n", score);
+    printf("다음 스테이지를 시작하시겠습니까? 네(y),아니요(n)");
+    char c;
+    while (1) {
+        c = getchar();
+        if (c == 'y' || c == 'Y') {
+            // stage = 0;
+            // score = 0;
+            init_stage();
+            // main();
+            return;
+        }
+        if (c == 'n' || c == 'N') {
+            printf("\n게임을 종료합니다.\n");
+            exit(0);
+        }
+    }
+}
+
+void game_clear2(){
     printf("\x1b[2J\x1b[H");
     printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
     printf("최종 점수: %d\n", score);
@@ -368,7 +400,8 @@ void game_clear(){
         if (c == 'y' || c == 'Y') {
             stage = 0;
             score = 0;
-            init_stage();
+            user_Heart = 3;
+            // init_stage();
             main();
             return;
         }

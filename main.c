@@ -51,11 +51,12 @@ void enable_raw_mode();
 void load_maps();
 void init_stage();
 void draw_game();
-void update_game(char input);
+void update_game(char input); 
 void move_player(char input);
 void move_enemies();
 void check_collisions();
 int kbhit();
+void getCoin();
 
 int main() {
     srand(time(NULL));
@@ -228,6 +229,16 @@ void update_game(char input) {
     check_collisions();
 }
 
+void getCoin(int player_x, int player_y) {//점프하는 도중에도 코인을 얻는 경우가 있기 때문에 해당기능을 함수로 만들어 재사용성 높임
+
+        for (int i = 0; i < coin_count; i++) {
+        if (!coins[i].collected && player_x == coins[i].x && player_y == coins[i].y) {
+            coins[i].collected = 1;
+            score += 20;
+        }
+    }
+}
+
 // 플레이어 이동 로직
 void move_player(char input) {
     int next_x = player_x, next_y = player_y;
@@ -255,7 +266,7 @@ void move_player(char input) {
         }
     }
     
-    
+
     if (on_ladder && (input == 'w' || input == 's')) {
         if(next_y >= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] != '#') {
             player_y = next_y;
@@ -270,6 +281,7 @@ void move_player(char input) {
         next_y = player_y + velocity_y;
         if (next_y < 0) next_y = 0;
 
+    
 
         if (velocity_y < 0) {
             int y_from = player_y - 1; 
@@ -278,6 +290,8 @@ void move_player(char input) {
 
             for (int y = y_from; y >= y_to; y--) {
                 char tile = map[stage][y][player_x];
+
+                getCoin(player_x,y); 
 
                 if (tile == 'X') {
                     user_Heart--;
@@ -303,6 +317,8 @@ void move_player(char input) {
 
         for (int y = y_from; y <= y_to; y++) {
             char tile = map[stage][y][player_x];
+
+            getCoin(player_x,y); 
 
             if (tile == '#') {
                 next_y = y - 1;
@@ -358,12 +374,7 @@ void check_collisions() {
             return;
         }
     }
-    for (int i = 0; i < coin_count; i++) {
-        if (!coins[i].collected && player_x == coins[i].x && player_y == coins[i].y) {
-            coins[i].collected = 1;
-            score += 20;
-        }
-    }
+    getCoin(player_x,player_y);
 }
 
 // 비동기 키보드 입력 확인

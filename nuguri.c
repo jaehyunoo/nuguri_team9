@@ -58,6 +58,7 @@ int kbhit();
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
+void beepsound(int sel);
 int main() {
     opening();
     srand(time(NULL));
@@ -145,6 +146,28 @@ void gotoxy(int x, int y){
     fflush(stdout);
 }
 
+void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
+    switch(sel){
+        case 1: //수정됨 hp 감소시
+        printf("\a");
+        printf("\a");
+        printf("\a");
+        fflush(stdout);
+        break;
+
+        case 2: //수정됨 점프시
+        printf("\a");
+        fflush(stdout);
+
+        case 3:
+        printf("\a") //수정됨 스테이지 이동시
+        printf("\a")
+        fflush(stdout);
+
+        default:
+        return;
+    }
+}
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }

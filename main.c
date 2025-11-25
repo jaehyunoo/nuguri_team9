@@ -1,10 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <locale.h> //setlocale 및 LC_ALL 사용을 위해// 글자 깨짐 방지 <새로 추가한 헤더>
+
+#ifdef _WIN32 //윈도우전용 헤더 <수정된 부분>
+#include <windows.h>  
+#include <conio.h>  
+
+#else// 리눅스 전용 헤더
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
-#include <time.h>
+#endif 
 
 // 맵 및 게임 요소 정의 (수정된 부분)
 #define MAP_WIDTH 40  // 맵 너비를 40으로 변경
@@ -43,7 +51,12 @@ Coin coins[MAX_COINS];
 int coin_count = 0;
 
 // 터미널 설정
+//disable_raw_mode()함수에서 콘솔상태 저장 변수 분기 <수정된 부분>
+#ifdef _WIN32
+static DWORD original_mode;
+#else
 struct termios orig_termios;
+#endif
 
 // 함수 선언
 void disable_raw_mode();
@@ -60,13 +73,33 @@ void game_clear1();
 void game_clear2();
 int kbhit();
 
-int main() {
+    
 int kbhit();
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
+int kbhit();
+
+//delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
+void delay(int ms) {
+#ifdef _WIN32
+  Sleep(ms);      // Windows: 밀리초 단위
+#else
+usleep(ms * 1000); // Linux/macOS: 마이크로초 단위 1밀리초 = 1000 마이크로초
+#endif
+}
+
 int main() {
+
+    //한국어 로케일 설정, c언어 에서 한글 입출력을 정상적으로 처리하기 위해서 <수정된 부분>
+    setlocale(LC_ALL, "ko_KR.UTF-8");
+
+    //윈도우에서 글자 깨짐 방지 <수정된 부분 >
+    #ifdef _WIN32
+    system("chcp 65001");
+    #endif
+    
     opening();
     srand(time(NULL));
     enable_raw_mode();
@@ -224,14 +257,37 @@ void sizecheck(){
     }
 }
 
+
 // 터미널 Raw 모드 활성화/비활성화
-void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
+//disable_raw_mode()함수 분기 <수정된 부분>
+void disable_raw_mode() { 
+
+    #ifdef _WIN32
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleMode(hStdin, original_mode);
+    #else
+
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    #endif
+ }
+ //enable_raw_mode()함수 분기 <수정된 부분>
 void enable_raw_mode() {
+
+    #ifdef _WIN32
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode;
+    GetConsoleMode(hStdin, &mode);
+    mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    SetConsoleMode(hStdin, mode);
+
+    #else
+>>>>>>> seram
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
     raw.c_lflag &= ~(ECHO | ICANON);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    #endif
 }
 
 // 맵 파일 로드
@@ -282,43 +338,66 @@ void init_stage() {
     }
 }
 
-// 게임 화면 그리기
+//게임 화면 그리기
 void draw_game() {
-    printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d Heart: %d\n", stage + 1, score,user_Heart);
-    clrscr();
-    printf("Stage: %d | Score: %d\n", stage + 1, score);
-    printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 
+    //윈도우에서 매 프레임마다 printf()로 한 문자씩 그리면 깜빡임 현상이 너무 심해 더블 버퍼링 사용 <수정된 부분>
+    static char prev_buffer[4096] = {0}; // 이전 화면 저장
+    char buffer[4096] = {0}; // 현재 화면 버퍼
+    int cursor_location = 0; // 현재 커서 위치
+
+    // 커서 숨김 (Linux/Windows 공통)
+    printf("\x1b[?25l");
+
+    #ifdef _WIN32
+        printf("\x1b[H"); // 커서만 이동 (화면 전체 지우지 않음)
+    #else
+        printf("\x1b[2J\x1b[H"); // 리눅스/맥은 빠르니까 전체 화면 지우기 유지
+    #endif
+
+    // 게임 UI 출력
+    //sprintf() 는 문자열을 버퍼에 넣는 함수, cursor_location는 버퍼의 현재 위치를 가리킴
+    //따라서 sprintf() 호출 후 반환값(문자열 길이)을 더해 다음 출력 위치로 이동 <수정된 부분>
+    cursor_location += sprintf(buffer + cursor_location, "Stage: %d | Score: %d Heart: %d\n", stage + 1, score, user_Heart);
+    cursor_location += sprintf(buffer + cursor_location, "조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
+
+    // 맵 구성
     char display_map[MAP_HEIGHT][MAP_WIDTH + 1];
     for(int y=0; y < MAP_HEIGHT; y++) {
         for(int x=0; x < MAP_WIDTH; x++) {
             char cell = map[stage][y][x];
-            if (cell == 'S' || cell == 'X' || cell == 'C') {
-                display_map[y][x] = ' ';
-            } else {
-                display_map[y][x] = cell;
-            }
-        }
-    }
-    
-    for (int i = 0; i < coin_count; i++) {
-        if (!coins[i].collected) {
-            display_map[coins[i].y][coins[i].x] = 'C';
+            display_map[y][x] = (cell == 'S' || cell == 'X' || cell == 'C') ? ' ' : cell;
         }
     }
 
-    for (int i = 0; i < enemy_count; i++) {
+    for (int i = 0; i < coin_count; i++)
+        if (!coins[i].collected)
+            display_map[coins[i].y][coins[i].x] = 'C';
+
+    for (int i = 0; i < enemy_count; i++)
         display_map[enemies[i].y][enemies[i].x] = 'X';
-    }
 
     display_map[player_y][player_x] = 'P';
 
+    // 맵을 버퍼에 넣기<수정된 부분>
     for (int y = 0; y < MAP_HEIGHT; y++) {
-        for(int x=0; x< MAP_WIDTH; x++){
-            printf("%c", display_map[y][x]);
-        }
-        printf("\n");
+        memcpy(buffer + cursor_location, display_map[y], MAP_WIDTH); //memcpy()는 메모리 블록을 복사하는 함수, 버퍼에 맵 데이터를 한 줄(display_map[y]) 씩 복사
+        cursor_location += MAP_WIDTH; // 복사한 만큼 커서 위치 이동
+        buffer[cursor_location++] = '\n'; // 각 줄 끝에 줄바꿈 추가, \n을 넣지 않으면 맵이 한 줄로 쭉 이어져서 출력
+    }
+
+    buffer[cursor_location] = '\0'; // 배열 끝에 널 문자 추가, 없으면 문자열 끝을 읽지 못해 오류 발생<수정된 부분>
+
+    // 이전 프레임과 동일하면 아예 출력하지 않음, 즉 변경된 부분만 출력 <수정된 부분>
+    if (strcmp(prev_buffer, buffer) != 0) {
+        #ifdef _WIN32
+            //Windows에서는 printf가 느리고 깜빡임이 생기기 때문에 콘솔 API인 WriteConsoleA() 를 사용해 출력.
+            WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), buffer, cursor_location, NULL, NULL);
+        #else
+            printf("%s", buffer); // 리눅스/맥은 그냥 출력
+
+        #endif
+            strcpy(prev_buffer, buffer); // 현재 화면을 이전 화면으로 저장, 화면 변화 감지를 위해 <수정된 부분>
     }
 }
 
@@ -553,6 +632,8 @@ void check_collisions() {
 }
 
 // 비동기 키보드 입력 확인
+// kbhit()함수 윈도우는 <conio.h>에 있으므로 리눅스에서만 정의<수정된 부분>
+#ifndef _WIN32
 int kbhit() {
     struct termios oldt, newt;
     int ch;
@@ -572,4 +653,4 @@ int kbhit() {
     }
     return 0;
 }
-}
+#endif

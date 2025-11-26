@@ -221,8 +221,8 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
         fflush(stdout);
 
         case 3:
-        printf("\a") //수정됨 스테이지 이동시
-        printf("\a")
+        printf("\a"); //수정됨 스테이지 이동시
+        printf("\a");
         fflush(stdout);
 
         default:
@@ -245,18 +245,6 @@ void beepsound(int sel){
 }
 
 */
-
-void sizecheck(){
-    FILE *file = fopen("map.txt", "r");
-    if (!file) {
-        perror("map.txt 파일을 열 수 없습니다.");
-        exit(1);
-    }
-    while(true){
-        if scanf()
-    }
-}
-
 
 // 터미널 Raw 모드 활성화/비활성화
 //disable_raw_mode()함수 분기 <수정된 부분>

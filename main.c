@@ -73,13 +73,10 @@ void game_clear1();
 void game_clear2();
 int kbhit();
 
-    
-int kbhit();
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
-int kbhit();
 
 //delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
 void delay(int ms) {
@@ -161,9 +158,6 @@ int main() {
             } else {
                 game_clear2(); // 마지막 스테이지 클리어
                 game_over = 1;
-                clrscr();
-                printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
-                printf("최종 점수: %d\n", score);
             }
         }
     }
@@ -412,7 +406,6 @@ void move_player(char input) {
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
             if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
-            if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -2;
             }
@@ -434,7 +427,6 @@ void move_player(char input) {
 
         next_y = player_y + velocity_y;
         if (next_y < 0) next_y = 0;
-
 
         if (velocity_y < 0) {
             int y_from = player_y - 1; 
@@ -480,7 +472,7 @@ void move_player(char input) {
 
 
         if (next_y < MAP_HEIGHT) {
-            player_y = next_y;
+             player_y = next_y;
         }
 
  
@@ -496,28 +488,6 @@ void move_player(char input) {
         }
     }
 }
-        if (is_jumping) {
-            next_y = player_y + velocity_y;
-            if(next_y < 0) next_y = 0;
-            velocity_y++;
-
-            if (velocity_y < 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#') {
-                velocity_y = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                player_y = next_y;
-            }
-            
-            if ((player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] == '#') {
-                is_jumping = 0;
-                velocity_y = 0;
-            }
-        } else {
-            if (floor_tile != '#' && floor_tile != 'H') {
-                 if (player_y + 1 < MAP_HEIGHT) player_y++;
-                 else init_stage();
-            }
-        }
-    }
     
     if (player_y >= MAP_HEIGHT) init_stage();
 }

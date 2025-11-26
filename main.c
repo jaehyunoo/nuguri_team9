@@ -73,13 +73,10 @@ void game_clear1();
 void game_clear2();
 int kbhit();
 
-    
-int kbhit();
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
-int kbhit();
 
 //delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
 void delay(int ms) {
@@ -161,9 +158,6 @@ int main() {
             } else {
                 game_clear2(); // 마지막 스테이지 클리어
                 game_over = 1;
-                clrscr();
-                printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
-                printf("최종 점수: %d\n", score);
             }
         }
     }
@@ -246,6 +240,8 @@ void beepsound(int sel){
 
 */
 
+
+
 // 터미널 Raw 모드 활성화/비활성화
 //disable_raw_mode()함수 분기 <수정된 부분>
 void disable_raw_mode() { 
@@ -269,7 +265,7 @@ void enable_raw_mode() {
     SetConsoleMode(hStdin, mode);
 
     #else
->>>>>>> seram
+
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -478,7 +474,7 @@ void move_player(char input) {
 
 
         if (next_y < MAP_HEIGHT) {
-            player_y = next_y;
+             player_y = next_y;
         }
 
  

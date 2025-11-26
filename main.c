@@ -246,16 +246,6 @@ void beepsound(int sel){
 
 */
 
-void sizecheck(){
-    FILE *file = fopen("map.txt", "r");
-    if (!file) {
-        perror("map.txt 파일을 열 수 없습니다.");
-        exit(1);
-    }
-    while(1){
-        if scanf()
-    }
-}
 
 
 // 터미널 Raw 모드 활성화/비활성화

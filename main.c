@@ -220,7 +220,7 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
         fflush(stdout);
         break;
 
-        case 2: //수정됨 점프, 사다리 이동시
+        case 2: //수정됨 점프
         printf("\a");
         fflush(stdout);
         break;
@@ -240,13 +240,28 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
 void beepsound(int sel){
     switch(sel){
         case 1:
-        beep();
-        break;
-        
+        Beep(900, 150);
+        Sleep(150);
+        Beep(700, 150);
+        Sleep(150);
+        Beep(500, 150);
+        Sleep(150);
+        Beep(350, 200); 
+        Sleep(150);
+
         case 2:
-        beep();
+        Beep(900, 200); 
+        Sleep(200);       
+        Beep(1200, 200);
         break;
-        
+
+        case 3:
+        Beep(1300, 150);
+        Sleep(150);
+        Beep(1600, 150);
+        Sleep(150);
+        Beep(2000, 200);
+        Sleep(150);
 }
 
 */

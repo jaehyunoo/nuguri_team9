@@ -229,7 +229,7 @@ void beepsound(int sel) { //수정됨 추가기능2 리눅스는 헤더파일 �
         fflush(stdout);
         break;
 
-    case 3:
+    case 3: //코인 획득
         for (int i = 0; i < 2; i++) {
             printf("\a");
             fflush(stdout);
@@ -433,6 +433,7 @@ void getCoin(int player_x, int player_y) {//점프하는 도중에도 코인을 
         if (!coins[i].collected && player_x == coins[i].x && player_y == coins[i].y) {
             coins[i].collected = 1;
             score += 20;
+            beepsound(3);
         }
     }
 }
@@ -460,6 +461,7 @@ void move_player(char input) {
     if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
         if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
             is_jumping = 1;
+            beepsound(2);
             velocity_y = -2;
         }
     }
@@ -493,6 +495,7 @@ void move_player(char input) {
 
                 if (tile == 'X') {
                     user_Heart--;
+                    beepsound(1);
                     init_stage();
                     return;  
                 }

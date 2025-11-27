@@ -225,6 +225,7 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
         case 2: //수정됨 점프, 사다리 이동시
         printf("\a");
         fflush(stdout);
+        break;
 
         case 3:
         printf("\a"); //수정됨 스테이지 이동시

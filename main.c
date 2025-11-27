@@ -444,24 +444,18 @@ void move_player(char input) {
 
     on_ladder = (current_tile == 'H');
 
-    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
-                                                                                            //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
-                                                                                            
     switch (input) {
         case 'a': next_x--; break;
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
-        case ' ':
-            beepsound(2);
-            if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
-                is_jumping = 1;
-                velocity_y = -2;
-            break;
-        }
-     }
+    }
 
     if (next_x >= 0 && next_x < MAP_WIDTH && map[stage][player_y][next_x] != '#') player_x = next_x;
+
+    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
+                                                                                            //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
+
     
     if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
         if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
@@ -498,22 +492,10 @@ void move_player(char input) {
                 getCoin(player_x,y); 
 
                 if (tile == 'X') {
-                    beepsound(1);
                     user_Heart--;
                     init_stage();
                     return;  
                 }
-
-                if (tile == 'C'){
-                    //map[stage][y][player_x] = ' ';
-                    for (int i = 0; i < coin_count; i++) {
-                        if (!coins[i].collected && player_x == coins[i].x && y == coins[i].y) {
-                            beepsound(3);
-                            coins[i].collected = 1;
-                             score += 20;
-                            }
-                        }
-                    }
 
        
                 if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
@@ -566,7 +548,6 @@ void move_player(char input) {
     
     if (player_y >= MAP_HEIGHT) init_stage();
 }
-
 
 // 적 이동 로직
 void move_enemies() {

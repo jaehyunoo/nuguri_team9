@@ -373,29 +373,47 @@ void allocateMap(void) {
     }
 }
 
+void fillMap(FILE *file) {
+    char line[1024];
+    int s = 0;  // 현재 스테이지 변수
+    int r = 0;  // 현재 스테이지에서의 줄 인덱스
+
+    rewind(file);  // 다시 파일처음부터 확인하기위해서(파일포인터를 다시 처음으로)
+
+    while (s < stageCount && fgets(line, sizeof(line), file)) {//analyzeMap함수떄 처럼 텍스트읽어오기
+        int blank = (line[0] == '\n' || line[0] == '\r' || line[0] == '\0');
+
+        if (blank) {
+            if (r > 0) {
+                s++;
+                r = 0;
+            }
+            continue;
+        }
+
+        int len = (int)strcspn(line, "\n\r");
+        if (len > mapWidth[s]) len = mapWidth[s];
+
+        memcpy(map[s][r], line, len); 
+        r++;
+    }
+}
+
 
 
 // 맵 파일 로드
-void load_maps() {
+void loadMap(void) {
     FILE *file = fopen("map.txt", "r");
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
         exit(1);
     }
-    int s = 0, r = 0;
-    char line[MAP_WIDTH + 2]; 
-    while (s < MAX_STAGES && fgets(line, sizeof(line), file)) {
-        if ((line[0] == '\n' || line[0] == '\r') && r > 0) {
-            s++;
-            r = 0;
-            continue;
-        }
-        if (r < MAP_HEIGHT) {
-            line[strcspn(line, "\n\r")] = 0;
-            strncpy(map[s][r], line, MAP_WIDTH + 1);
-            r++;
-        }
-    }
+
+    analyzeMap(file);
+    allocateMap();
+    fillMap(file);
+
+
     fclose(file);
 }
 

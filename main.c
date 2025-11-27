@@ -15,8 +15,6 @@
 #endif 
 
 // 맵 및 게임 요소 정의 (수정된 부분)
-#define MAP_WIDTH 40  // 맵 너비를 40으로 변경
-#define MAP_HEIGHT 20
 #define MAX_STAGES 2
 #define MAX_ENEMIES 15 // 최대 적 개수 증가
 #define MAX_COINS 30   // 최대 코인 개수 증가
@@ -66,7 +64,7 @@ struct termios orig_termios;
 // 함수 선언
 void disable_raw_mode();
 void enable_raw_mode();
-void load_maps();
+void loadMap();
 void init_stage();
 void draw_game();
 void update_game(char input); 
@@ -106,13 +104,13 @@ int main() {
     opening();
     srand(time(NULL));
     enable_raw_mode();
-    load_maps();
+    loadMap();
     init_stage();
 
     
     int game_over = 0;
 
-    while (!game_over && stage < MAX_STAGES) {
+    while (!game_over && stage < stageCount) {
 
         char c = '\0';
         while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
@@ -165,7 +163,7 @@ int main() {
                 game_clear();
             }
             */
-            if (stage + 1 < MAX_STAGES) {
+            if (stage + 1 < stageCount) {
                 stage++;
                 init_stage();
                 game_clear1(); // 첫 스테이지 클리어 메시지
@@ -425,8 +423,8 @@ void init_stage() {
     is_jumping = 0;
     velocity_y = 0;
 
-    for (int y = 0; y < MAP_HEIGHT; y++) {
-        for (int x = 0; x < MAP_WIDTH; x++) {
+    for (int y = 0; y < mapHeight[stage]; y++) {
+        for (int x = 0; x < mapWidth[stage]; x++) {
             char cell = map[stage][y][x];
             if (cell == 'S') {
                 player_x = x;
@@ -442,66 +440,94 @@ void init_stage() {
 }
 
 //게임 화면 그리기
-void draw_game() {
+void draw_game(void) {
 
-    //윈도우에서 매 프레임마다 printf()로 한 문자씩 그리면 깜빡임 현상이 너무 심해 더블 버퍼링 사용 <수정된 부분>
-    static char prev_buffer[4096] = {0}; // 이전 화면 저장
-    char buffer[4096] = {0}; // 현재 화면 버퍼
-    int cursor_location = 0; // 현재 커서 위치
+    int W = mapWidth[stage];   // 현재 스테이지 가로 길이
+    int H = mapHeight[stage];  // 현재 스테이지 세로 길이
 
-    // 커서 숨김 (Linux/Windows 공통)
+
+    static char prev_buffer[4096] = {0};
+    char buffer[4096] = {0};
+    int cursor_location = 0;
+
     printf("\x1b[?25l");
 
-    #ifdef _WIN32
-        printf("\x1b[H"); // 커서만 이동 (화면 전체 지우지 않음)
-    #else
-        printf("\x1b[2J\x1b[H"); // 리눅스/맥은 빠르니까 전체 화면 지우기 유지
-    #endif
+#ifdef _WIN32
+    printf("\x1b[H");          
+#else
+    printf("\x1b[2J\x1b[H");   
+#endif
 
-    // 게임 UI 출력
-    //sprintf() 는 문자열을 버퍼에 넣는 함수, cursor_location는 버퍼의 현재 위치를 가리킴
-    //따라서 sprintf() 호출 후 반환값(문자열 길이)을 더해 다음 출력 위치로 이동 <수정된 부분>
-    cursor_location += sprintf(buffer + cursor_location, "Stage: %d | Score: %d Heart: %d\n", stage + 1, score, user_Heart);
-    cursor_location += sprintf(buffer + cursor_location, "조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
+   
+    cursor_location += sprintf(buffer + cursor_location,
+                               "Stage: %d | Score: %d Heart: %d\n",
+                               stage + 1, score, user_Heart);
+    cursor_location += sprintf(buffer + cursor_location,
+                               "조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 
-    // 맵 구성
-    char display_map[MAP_HEIGHT][MAP_WIDTH + 1];
-    for(int y=0; y < MAP_HEIGHT; y++) {
-        for(int x=0; x < MAP_WIDTH; x++) {
+ 
+    char **display_map = (char **)malloc(H * sizeof(char *));
+    if (!display_map) {
+        perror("malloc 실패");
+        exit(1);
+    }
+
+    for (int y = 0; y < H; y++) {
+        display_map[y] = (char *)malloc(W + 1);  
+        if (!display_map[y]) {
+            perror("malloc 실패");
+            exit(1);
+        }
+
+        for (int x = 0; x < W; x++) {
             char cell = map[stage][y][x];
-            display_map[y][x] = (cell == 'S' || cell == 'X' || cell == 'C') ? ' ' : cell;
+            display_map[y][x] =
+                (cell == 'S' || cell == 'X' || cell == 'C') ? ' ' : cell;
+        }
+        display_map[y][W] = '\0'; 
+    }
+
+
+    for (int i = 0; i < coin_count; i++) {
+        if(!coins[i].collected) {
+            display_map[coins[i].y][coins[i].x] = 'C';
         }
     }
 
-    for (int i = 0; i < coin_count; i++)
-        if (!coins[i].collected)
-            display_map[coins[i].y][coins[i].x] = 'C';
 
-    for (int i = 0; i < enemy_count; i++)
+    for (int i = 0; i < enemy_count; i++) {
         display_map[enemies[i].y][enemies[i].x] = 'X';
-
-    display_map[player_y][player_x] = 'P';
-
-    // 맵을 버퍼에 넣기<수정된 부분>
-    for (int y = 0; y < MAP_HEIGHT; y++) {
-        memcpy(buffer + cursor_location, display_map[y], MAP_WIDTH); //memcpy()는 메모리 블록을 복사하는 함수, 버퍼에 맵 데이터를 한 줄(display_map[y]) 씩 복사
-        cursor_location += MAP_WIDTH; // 복사한 만큼 커서 위치 이동
-        buffer[cursor_location++] = '\n'; // 각 줄 끝에 줄바꿈 추가, \n을 넣지 않으면 맵이 한 줄로 쭉 이어져서 출력
     }
 
-    buffer[cursor_location] = '\0'; // 배열 끝에 널 문자 추가, 없으면 문자열 끝을 읽지 못해 오류 발생<수정된 부분>
 
-    // 이전 프레임과 동일하면 아예 출력하지 않음, 즉 변경된 부분만 출력 <수정된 부분>
+        display_map[player_y][player_x] = 'P';
+    
+
+    for (int y = 0; y < H; y++) {
+        if (cursor_location + W + 1 >= (int)sizeof(buffer)) {
+            break;
+        }
+        memcpy(buffer + cursor_location, display_map[y], W);
+        cursor_location += W;
+        buffer[cursor_location++] = '\n';
+    }
+
+    buffer[cursor_location] = '\0';
+
     if (strcmp(prev_buffer, buffer) != 0) {
-        #ifdef _WIN32
-            //Windows에서는 printf가 느리고 깜빡임이 생기기 때문에 콘솔 API인 WriteConsoleA() 를 사용해 출력.
-            WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), buffer, cursor_location, NULL, NULL);
-        #else
-            printf("%s", buffer); // 리눅스/맥은 그냥 출력
-
-        #endif
-            strcpy(prev_buffer, buffer); // 현재 화면을 이전 화면으로 저장, 화면 변화 감지를 위해 <수정된 부분>
+#ifdef _WIN32
+        WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE),
+                      buffer, cursor_location, NULL, NULL);
+#else
+        printf("%s", buffer);
+#endif
+        strcpy(prev_buffer, buffer);
     }
+
+    for (int y = 0; y < H; y++) {
+        free(display_map[y]);
+    }
+    free(display_map);
 }
 
 // 게임 상태 업데이트
@@ -532,12 +558,12 @@ void move_player(char input) {
         case 'a': next_x--; break;
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
-        case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
+        case 's': if (on_ladder && (player_y + 1 < mapHeight[stage]) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
     }
 
-    if (next_x >= 0 && next_x < MAP_WIDTH && map[stage][player_y][next_x] != '#') player_x = next_x;
+    if (next_x >= 0 && next_x < mapHeight[stage]&& map[stage][player_y][next_x] != '#') player_x = next_x;
 
-    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
+    char floor_tile = (player_y + 1 < mapHeight[stage]) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
                                                                                             //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
 
     
@@ -550,7 +576,7 @@ void move_player(char input) {
     
 
     if (on_ladder && (input == 'w' || input == 's')) {
-        if(next_y >= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] != '#') {
+        if(next_y >= 0 && next_y < mapHeight[stage] && map[stage][next_y][player_x] != '#') {
             player_y = next_y;
             is_jumping = 0;
             velocity_y = 0;
@@ -583,7 +609,7 @@ void move_player(char input) {
 
        
                 if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
-                    if (on_ladder && y + 1 < MAP_HEIGHT && 
+                    if (on_ladder && y + 1 < mapHeight[stage] && 
                         map[stage][y + 1][player_x] == 'H') {
                             continue;
                         }
@@ -595,7 +621,7 @@ void move_player(char input) {
         else if (velocity_y > 0) {
         int y_from = player_y + 1;    
         int y_to   = next_y;
-        if (y_to >= MAP_HEIGHT) y_to = MAP_HEIGHT - 1;
+        if (y_to >= mapHeight[stage]) y_to = mapHeight[stage] - 1;
 
         for (int y = y_from; y <= y_to; y++) {
             char tile = map[stage][y][player_x];
@@ -612,25 +638,25 @@ void move_player(char input) {
         velocity_y++;
 
 
-        if (next_y < MAP_HEIGHT) {
+        if (next_y < mapHeight[stage]) {
              player_y = next_y;
         }
 
  
-        if (player_y + 1 < MAP_HEIGHT &&
+        if (player_y + 1 < mapHeight[stage] &&
             map[stage][player_y + 1][player_x] == '#') {
             is_jumping = 0;
             velocity_y = 0;
         }
     } else {
         if (floor_tile != '#' && floor_tile != 'H') {
-             if (player_y + 1 < MAP_HEIGHT) player_y++;
+             if (player_y + 1 < mapHeight[stage]) player_y++;
              else init_stage();
             }
         }
   }
     
-    if (player_y >= MAP_HEIGHT) init_stage();
+    if (player_y >= mapHeight[stage]) init_stage();
 }
 
 
@@ -638,7 +664,7 @@ void move_player(char input) {
 void move_enemies() {
     for (int i = 0; i < enemy_count; i++) {
         int next_x = enemies[i].x + enemies[i].dir;
-        if (next_x < 0 || next_x >= MAP_WIDTH || map[stage][enemies[i].y][next_x] == '#' || (enemies[i].y + 1 < MAP_HEIGHT && map[stage][enemies[i].y + 1][next_x] == ' ')) {
+        if (next_x < 0 || next_x >= mapWidth[stage]|| map[stage][enemies[i].y][next_x] == '#' || (enemies[i].y + 1 < mapHeight[stage] && map[stage][enemies[i].y + 1][next_x] == ' ')) {
             enemies[i].dir *= -1;
         } else {
             enemies[i].x = next_x;

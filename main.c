@@ -211,26 +211,30 @@ void gotoxy(int x, int y){
     fflush(stdout);
 }
 
-void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
-    switch(sel){
-        case 1: //수정됨 hp 감소시
-        printf("\a");
-        printf("\a");
+void beepsound(int sel) { //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
+    switch (sel) {
+    case 1: //수정됨 hp 감소시
+        for (int i = 0; i < 3; i++) {
+            printf("\a");
+            fflush(stdout);
+            delay(30);
+        }
+        break;
+
+    case 2: //수정됨 점프
         printf("\a");
         fflush(stdout);
         break;
 
-        case 2: //수정됨 점프
-        printf("\a");
-        fflush(stdout);
+    case 3:
+        for (int i = 0; i < 2; i++) {
+            printf("\a");
+            fflush(stdout);
+            delay(30);
+        }
         break;
 
-        case 3:
-        printf("\a"); //수정됨 스테이지 이동시
-        printf("\a");
-        fflush(stdout);
-
-        default:
+    default:
         return;
     }
 }
@@ -241,27 +245,29 @@ void beepsound(int sel){
     switch(sel){
         case 1:
         Beep(900, 150);
-        Sleep(150);
+        delay(30);
         Beep(700, 150);
-        Sleep(150);
+        delay(30);
         Beep(500, 150);
-        Sleep(150);
-        Beep(350, 200); 
-        Sleep(150);
+        delay(30);
+        Beep(350, 200);
+        delay(30);
+        break;
 
         case 2:
-        Beep(900, 200); 
-        Sleep(200);       
+        Beep(900, 200);
+        delay(30);
         Beep(1200, 200);
         break;
 
         case 3:
         Beep(1300, 150);
-        Sleep(150);
+        delay(30);
         Beep(1600, 150);
-        Sleep(150);
+        delay(150);
         Beep(2000, 200);
-        Sleep(150);
+        delay(30);
+        break;
 }
 
 */
@@ -430,6 +436,7 @@ void move_player(char input) {
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
+            beepsound(2);
             if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -2;
@@ -463,6 +470,7 @@ void move_player(char input) {
                 char tile = map[stage][y][player_x];
 
                 if (tile == 'X') {
+                    beepsound(1);
                     user_Heart--;
                     init_stage();
                     return;  
@@ -472,6 +480,7 @@ void move_player(char input) {
                     //map[stage][y][player_x] = ' ';
                     for (int i = 0; i < coin_count; i++) {
                         if (!coins[i].collected && player_x == coins[i].x && y == coins[i].y) {
+                            beepsound(3);
                             coins[i].collected = 1;
                              score += 20;
                             }

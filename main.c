@@ -90,6 +90,8 @@ usleep(ms * 1000); // Linux/macOS: 마이크로초 단위 1밀리초 = 1000 마�
 #endif
 }
 
+int first = 1; //처음 플레이 여부
+
 int main() {
 
     //한국어 로케일 설정, c언어 에서 한글 입출력을 정상적으로 처리하기 위해서 <수정된 부분>
@@ -99,8 +101,10 @@ int main() {
     #ifdef _WIN32
     system("chcp 65001");
     #endif
-    
-    opening();
+    if (first == 1){
+        first = 0;
+        opening();
+    }
     srand(time(NULL));
     enable_raw_mode();
     load_maps();

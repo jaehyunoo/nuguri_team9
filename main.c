@@ -395,6 +395,7 @@ void draw_game() {
 
 // 게임 상태 업데이트
 void update_game(char input) {
+    check_collisions();
     move_player(input);
     move_enemies();
     check_collisions();
@@ -451,6 +452,16 @@ void move_player(char input) {
                     init_stage();
                     return;  
                 }
+
+                if (tile == 'C'){
+                    //map[stage][y][player_x] = ' ';
+                    for (int i = 0; i < coin_count; i++) {
+                        if (!coins[i].collected && player_x == coins[i].x && y == coins[i].y) {
+                            coins[i].collected = 1;
+                             score += 20;
+                            }
+                        }
+                    }
 
        
                 if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨

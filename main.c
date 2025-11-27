@@ -64,7 +64,7 @@ void enable_raw_mode();
 void load_maps();
 void init_stage();
 void draw_game();
-void update_game(char input);
+void update_game(char input); 
 void move_player(char input);
 void move_enemies();
 void check_collisions();
@@ -72,6 +72,7 @@ void game_overscr();
 void game_clear1();
 void game_clear2();
 int kbhit();
+void getCoin();
 
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
@@ -103,17 +104,19 @@ int main() {
     load_maps();
     init_stage();
 
-    char c = '\0';
+    
     int game_over = 0;
 
     while (!game_over && stage < MAX_STAGES) {
-        if (kbhit()) {
-            c = getchar();
-            if (c == 'q') {
+
+        char c = '\0';
+        while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
+            int chr = getchar();
+            if (chr == 'q') {
                 game_over = 1;
-                continue;
+                break;
             }
-            if (c == '\x1b') {
+            if (chr == '\x1b') {
                 getchar(); // '['
                 switch (getchar()) {
                     case 'A': c = 'w'; break; // Up
@@ -122,8 +125,14 @@ int main() {
                     case 'D': c = 'a'; break; // Left
                 }
             }
-        } else {
-            c = '\0';
+            else {
+            c = chr;
+            }
+        } 
+
+        if(game_over==1)
+        {
+            break;
         }
 
         update_game(c);
@@ -265,6 +274,7 @@ void enable_raw_mode() {
     SetConsoleMode(hStdin, mode);
 
     #else
+
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -391,10 +401,19 @@ void update_game(char input) {
     check_collisions();
 }
 
+void getCoin(int player_x, int player_y) {//점프하는 도중에도 코인을 얻는 경우가 있기 때문에 해당기능을 함수로 만들어 재사용성 높임
+
+        for (int i = 0; i < coin_count; i++) {
+        if (!coins[i].collected && player_x == coins[i].x && player_y == coins[i].y) {
+            coins[i].collected = 1;
+            score += 20;
+        }
+    }
+}
+
 // 플레이어 이동 로직
 void move_player(char input) {
     int next_x = player_x, next_y = player_y;
-    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';
     char current_tile = map[stage][player_y][player_x];
 
     on_ladder = (current_tile == 'H');
@@ -404,16 +423,22 @@ void move_player(char input) {
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (on_ladder && (player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
-        case ' ':
-            if (!is_jumping && (floor_tile == '#' || floor_tile  == 'H' ||  on_ladder)) {
-                is_jumping = 1;
-                velocity_y = -2;
-            }
-            break;
     }
 
     if (next_x >= 0 && next_x < MAP_WIDTH && map[stage][player_y][next_x] != '#') player_x = next_x;
+
+    char floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
+                                                                                            //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
+
     
+    if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
+        if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
+            is_jumping = 1;
+            velocity_y = -2;
+        }
+    }
+    
+
     if (on_ladder && (input == 'w' || input == 's')) {
         if(next_y >= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] != '#') {
             player_y = next_y;
@@ -428,6 +453,8 @@ void move_player(char input) {
         next_y = player_y + velocity_y;
         if (next_y < 0) next_y = 0;
 
+    
+
         if (velocity_y < 0) {
             int y_from = player_y - 1; 
             int y_to   = next_y;         
@@ -435,6 +462,8 @@ void move_player(char input) {
 
             for (int y = y_from; y >= y_to; y--) {
                 char tile = map[stage][y][player_x];
+
+                getCoin(player_x,y); 
 
                 if (tile == 'X') {
                     user_Heart--;
@@ -461,6 +490,8 @@ void move_player(char input) {
         for (int y = y_from; y <= y_to; y++) {
             char tile = map[stage][y][player_x];
 
+            getCoin(player_x,y); 
+
             if (tile == '#') {
                 next_y = y - 1;
                 break;
@@ -485,9 +516,9 @@ void move_player(char input) {
         if (floor_tile != '#' && floor_tile != 'H') {
              if (player_y + 1 < MAP_HEIGHT) player_y++;
              else init_stage();
+            }
         }
-    }
-}
+  }
     
     if (player_y >= MAP_HEIGHT) init_stage();
 }
@@ -582,12 +613,7 @@ void check_collisions() {
             return;
         }
     }
-    for (int i = 0; i < coin_count; i++) {
-        if (!coins[i].collected && player_x == coins[i].x && player_y == coins[i].y) {
-            coins[i].collected = 1;
-            score += 20;
-        }
-    }
+    getCoin(player_x,player_y);
 }
 
 // 비동기 키보드 입력 확인

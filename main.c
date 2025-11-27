@@ -140,7 +140,7 @@ int main() {
 
         update_game(c);
         draw_game();
-        usleep(90000);
+        delay(90);
 
 
         if(user_Heart==0)

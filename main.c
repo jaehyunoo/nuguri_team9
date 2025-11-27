@@ -33,10 +33,15 @@ typedef struct {
 } Coin;
 
 // 전역 변수
-char map[MAX_STAGES][MAP_HEIGHT][MAP_WIDTH + 1];
+//char map[MAX_STAGES][MAP_HEIGHT][MAP_WIDTH + 1];
 int player_x, player_y;
 int stage = 0;
 int score = 0;
+
+char ***map = NULL;         // map[stage][y][x] -> 맵포인터
+int mapWidth[MAX_STAGES];   // 각 stage의 가로 길이
+int mapHeight[MAX_STAGES];  // 각 stage의 세로 길이
+int stageCount = 0; 
 
 // 플레이어 상태
 int is_jumping = 0;
@@ -283,6 +288,93 @@ void enable_raw_mode() {
     #endif
 }
 
+void analyzeMap(FILE *file) {
+    char line[1024];
+    int s = 0;         // 현재 스테이지 인덱스
+    int curHeight = 0; 
+    int curWidth  = 0;
+
+        //스테이지 별 widh와 height받아오기전 초기화
+    for (int i = 0; i < MAX_STAGES; i++) {
+        mapWidth[i] = 0;
+        mapHeight[i] = 0;
+    }
+    stageCount = 0;
+
+    while (fgets(line, sizeof(line), file)) {//1줄씩 입력받으면서 구조확인
+        int blank = (line[0] == '\n' || line[0] == '\r' || line[0] == '\0');
+
+        if (blank) {//공백을 기준으로 스테이지를 구별한다.
+            if (curHeight > 0) {//공백이면 스테이지 너비,높이를 기록한다.
+                mapWidth[s]  = curWidth;
+                mapHeight[s] = curHeight;
+                s++;
+
+                if (s >= MAX_STAGES) {
+                    fprintf(stderr,
+                        "스테이지 개수가 MAX_STAGES(%d)를 초과했습니다.\n",
+                        MAX_STAGES);
+                    exit(1);
+                }
+
+                curHeight = 0;
+                curWidth  = 0;
+            }
+            continue;
+        }
+
+        int len = (int)strcspn(line, "\n\r");  //문자로만된 길이를 받아오기위해서
+        if (len > curWidth) curWidth = len;
+
+        curHeight++;
+    }
+
+    if (curHeight > 0) {
+        mapWidth[s]  = curWidth;
+        mapHeight[s] = curHeight;
+        s++;
+    }
+
+    if (s == 0) {
+        fprintf(stderr, "map.txt 에 유효한 맵 데이터가 없습니다.\n");
+        exit(1);
+    }
+
+    stageCount = s;
+}
+
+void allocateMap(void) {
+
+    map = (char ***)malloc(stageCount * sizeof(char **));//가장 중요한 map동적할당
+    if (!map) {
+        perror("map malloc 실패");
+        exit(1);
+    }
+
+    //스테이지 수만큼 동적할당된 메모리에 접근하여 스테이지수, 높이수만큼 배열공간을 확보한다.
+    for (int s = 0; s < stageCount; s++) {
+        map[s] = (char **)malloc(mapHeight[s] * sizeof(char *));
+        if (!map[s]) {
+            perror("map[s]쪽 malloc 실패");
+            exit(1);
+        }
+
+        for (int y = 0; y < mapHeight[s]; y++) {
+            map[s][y] = (char *)malloc(mapWidth[s] + 1);
+            if (!map[s][y]) {
+                perror("map[s][y]쪽 malloc 실패");
+                exit(1);
+            }
+
+            //공백으로 채우면서 마지막에 널삽입
+            memset(map[s][y], ' ', mapWidth[s]);
+            map[s][y][mapWidth[s]] = '\0';
+        }
+    }
+}
+
+
+
 // 맵 파일 로드
 void load_maps() {
     FILE *file = fopen("map.txt", "r");
@@ -291,7 +383,7 @@ void load_maps() {
         exit(1);
     }
     int s = 0, r = 0;
-    char line[MAP_WIDTH + 2]; // 버퍼 크기는 MAP_WIDTH에 따라 자동 조절됨
+    char line[MAP_WIDTH + 2]; 
     while (s < MAX_STAGES && fgets(line, sizeof(line), file)) {
         if ((line[0] == '\n' || line[0] == '\r') && r > 0) {
             s++;

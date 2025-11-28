@@ -120,12 +120,36 @@ int main() {
         first=0;
         opening();
     }
+    clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
 
     init_stage();
 
     while (!game_over && stage < stageCount) {
 
         char c = '\0';
+
+         // 윈도우 리눅스 키보드 입력 분기<수정된 부분>
+    #ifdef _WIN32
+        while (_kbhit()) {  
+            int chr = _getch();
+            if (chr == 'q') {
+                game_over = 1;
+                break;
+            }   
+            if (chr == 0 || chr == 224) { // 방향키 처리 
+                chr = _getch();
+                switch (chr) { 
+                case 72: c = 'w'; break; // Up
+                case 80: c = 's'; break; // Down
+                case 75: c = 'a'; break; // Left
+                case 77: c = 'd'; break; // Right
+            }
+        } 
+        else {  
+        c = chr;
+        }
+    }
+    #else
         while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
             int chr = getchar();
             if (chr == 'q') {
@@ -145,7 +169,8 @@ int main() {
             else {
             c = chr;
             }
-        } 
+        }
+        #endif 
 
         update_game(c);
         draw_game();
@@ -197,6 +222,7 @@ int main() {
                 }
                 game_over=1;
             }
+            clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
         }
     }
   }

@@ -799,6 +799,7 @@ void check_collisions() {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             score = (score > 50) ? score - 50 : 0;
             user_Heart--;
+            beepsound(1);
             init_stage();
             return;
         }

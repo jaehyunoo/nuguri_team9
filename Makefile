@@ -1,32 +1,23 @@
-#소스파일 이름
-    SRC = main.c
+# 프로젝트 이름 (생성될 실행 파일 이름)
+TARGET = picture_maker
 
-    #실행파일 이름
-    TARGET = test
+# 소스 파일
+SRC = main.c
 
-    #OS 구분
-    ifeq ($(OS),Windows_NT)
-	    #----- Windows -----
-        CC = gcc
-        RM = del /Q
-        TARGET := $(TARGET).exe
-        CFLAGS = -Wall -O2 -D_WIN32
-        LIBS = -lws2_32
-    else
-	    #----- Linux / macOS -----
-        CC = gcc
-        RM = rm -f
-        CFLAGS = -Wall -O2
-        LIBS =
-    endif
+# 컴파일러
+CC = gcc
 
-    all: $(TARGET)
+# 컴파일 옵션
+CFLAGS = -Wall -O2
 
-    $(TARGET): $(SRC)
-	    $(CC) $(CFLAGS) -o $(TARGET) $(SRC) $(LIBS)
+# 실행 파일 생성 규칙
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
 
-    run: $(TARGET)
-	    ./$(TARGET)
+# 실행 (make run)
+run: $(TARGET)
+	./$(TARGET)
 
-    clean:
-	    $(RM) $(TARGET)
+# 정리 (make clean)
+clean:
+	rm -f $(TARGET)

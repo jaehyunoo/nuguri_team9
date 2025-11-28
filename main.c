@@ -71,9 +71,9 @@ void update_game(char input);
 void move_player(char input);
 void move_enemies();
 void check_collisions();
-void game_overscr();
-void game_clear1();
-void game_clear2();
+int game_overscr();
+int game_clear1();
+int game_clear2();
 int kbhit();
 void getCoin();
 
@@ -81,6 +81,7 @@ void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
+void freeMap();
 
 //delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
 void delay(int ms) {
@@ -91,7 +92,7 @@ usleep(ms * 1000); // Linux/macOS: 마이크로초 단위 1밀리초 = 1000 마�
 #endif
 }
 
-int first = 1; //처음 플레이 여부
+int first=1;
 
 int main() {
 
@@ -102,17 +103,25 @@ int main() {
     #ifdef _WIN32
     system("chcp 65001");
     #endif
-    if (first == 1){
-        first = 0;
+
+    loadMap();
+    srand(time(NULL));
+
+    while (1) {
+    stage = 0;
+    score = 0;
+    user_Heart = 3;
+    int game_over = 0;
+
+    enable_raw_mode();//opening()실행되기전 실행
+
+    if(first==1)
+    {
+        first=0;
         opening();
     }
-    srand(time(NULL));
-    enable_raw_mode();
-    loadMap();
-    init_stage();
 
-    
-    int game_over = 0;
+    init_stage();
 
     while (!game_over && stage < stageCount) {
 
@@ -120,8 +129,9 @@ int main() {
         while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
             int chr = getchar();
             if (chr == 'q') {
-                game_over = 1;
-                break;
+                disable_raw_mode();
+                freeMap(); 
+                return 0;
             }
             if (chr == '\x1b') {
                 getchar(); // '['
@@ -137,20 +147,20 @@ int main() {
             }
         } 
 
-        if(game_over==1)
-        {
-            break;
-        }
-
         update_game(c);
         draw_game();
         delay(90);
 
 
-        if(user_Heart==0)
+        if (user_Heart == 0)
         {
-            game_overscr();
-            exit(0);
+            int re = game_overscr();
+            disable_raw_mode();
+            if (!re) {
+                freeMap();
+                return 0;
+            }
+            game_over = 1; 
         }
         
         if (map[stage][player_y][player_x] == 'E') {
@@ -170,16 +180,26 @@ int main() {
             if (stage + 1 < stageCount) {
                 stage++;
                 init_stage();
-                game_clear1(); // 첫 스테이지 클리어 메시지
+                int re = game_clear1(); // 첫 스테이지 클리어 메시지
+
+                if (!re)
+                {
+                    disable_raw_mode();
+                    freeMap();
+                    return 0;
+                }
             } else {
-                game_clear2(); // 마지막 스테이지 클리어
-                game_over = 1;
+                int re = game_clear2();
+                disable_raw_mode();
+                if (!re) {
+                    freeMap();
+                    return 0;
+                }
+                game_over=1;
             }
         }
     }
-
-    disable_raw_mode();
-    return 0;
+  }
 }
 
 void opening(){
@@ -297,6 +317,7 @@ void enable_raw_mode() {
 
     #ifdef _WIN32
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hStdin, &original_mode);
     DWORD mode;
     GetConsoleMode(hStdin, &mode);
     mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
@@ -420,6 +441,17 @@ void fillMap(FILE *file) {
         memcpy(map[s][r], line, len); 
         r++;
     }
+}
+
+void freeMap(void) {
+    for (int s = 0; s < stageCount; s++) {
+        for (int y = 0; y < mapHeight[s]; y++) {
+            free(map[s][y]);
+        }
+        free(map[s]);
+    }
+        free(map);  
+        map = NULL;
 }
 
 
@@ -588,7 +620,7 @@ void move_player(char input) {
         case 's': if (on_ladder && (player_y + 1 < mapHeight[stage]) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
     }
 
-    if (next_x >= 0 && next_x < mapHeight[stage]&& map[stage][player_y][next_x] != '#') player_x = next_x;
+    if (next_x >= 0 && next_x < mapWidth[stage]&& map[stage][player_y][next_x] != '#') player_x = next_x;
 
     char floor_tile = (player_y + 1 < mapHeight[stage]) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
                                                                                             //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
@@ -701,7 +733,7 @@ void move_enemies() {
 }
 
 
-void game_overscr(){
+int game_overscr(){
     clrscr();
     printf("\n\n\n\n\n");
         printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
@@ -719,20 +751,16 @@ void game_overscr(){
     while (1) {
         c = getchar();
         if (c == 'y' || c == 'Y') {
-            stage = 0;
-            score = 0;
-            user_Heart = 3;
-            main();
-            return;
+            return 1;
         }
         if (c == 'n' || c == 'N') {
             printf("\n게임을 종료합니다.\n");
-            exit(0);
+            return 0;
         }
     }
 }
 
-void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
+int game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
     clrscr();
     printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
     printf("\n           ┃                                          ┃");
@@ -749,20 +777,16 @@ void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
     while (1) {
         c = getchar();
         if (c == 'y' || c == 'Y') {
-            // stage = 0;
-            // score = 0;
-            init_stage();
-            // main();
-            return;
+            return 1;
         }
         if (c == 'n' || c == 'N') {
             printf("\n게임을 종료합니다.\n");
-            exit(0);
+            return 0;
         }
     }
 }
 
-void game_clear2(){
+int game_clear2(){
     clrscr();
     printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
     printf("\n           ┃                                          ┃");
@@ -779,16 +803,11 @@ void game_clear2(){
     while (1) {
         c = getchar();
         if (c == 'y' || c == 'Y') {
-            stage = 0;
-            score = 0;
-            user_Heart = 3;
-            // init_stage();
-            main();
-            return;
+            return 1;
         }
         if (c == 'n' || c == 'N') {
             printf("\n게임을 종료합니다.\n");
-            exit(0);
+            return 0;
         }
     }
 }

@@ -297,6 +297,7 @@ void enable_raw_mode() {
 
     #ifdef _WIN32
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hStdin, &original_mode);
     DWORD mode;
     GetConsoleMode(hStdin, &mode);
     mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
@@ -588,7 +589,7 @@ void move_player(char input) {
         case 's': if (on_ladder && (player_y + 1 < mapHeight[stage]) && map[stage][player_y + 1][player_x] != '#') next_y++; break;
     }
 
-    if (next_x >= 0 && next_x < mapHeight[stage]&& map[stage][player_y][next_x] != '#') player_x = next_x;
+    if (next_x >= 0 && next_x < mapWidth[stage]&& map[stage][player_y][next_x] != '#') player_x = next_x;
 
     char floor_tile = (player_y + 1 < mapHeight[stage]) ? map[stage][player_y + 1][player_x] : '#';//이전의 player_x값을 이용해서 floor을 결정하다보니깐 
                                                                                             //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.

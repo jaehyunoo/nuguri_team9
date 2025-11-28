@@ -71,9 +71,9 @@ void update_game(char input);
 void move_player(char input);
 void move_enemies();
 void check_collisions();
-void game_overscr();
+int game_overscr();
 void game_clear1();
-void game_clear2();
+int game_clear2();
 int kbhit();
 void getCoin();
 
@@ -92,7 +92,7 @@ usleep(ms * 1000); // Linux/macOS: 마이크로초 단위 1밀리초 = 1000 마�
 #endif
 }
 
-int first = 1; //처음 플레이 여부
+int first=1;
 
 int main() {
 
@@ -103,17 +103,24 @@ int main() {
     #ifdef _WIN32
     system("chcp 65001");
     #endif
-    if (first == 1){
-        first = 0;
-        opening();
-    }
-    srand(time(NULL));
-    enable_raw_mode();
+
     loadMap();
+    srand(time(NULL));
+
+    while (1) {
+    enable_raw_mode();
     init_stage();
 
-    
+    stage = 0;
+    score = 0;
+    user_Heart = 3;
     int game_over = 0;
+
+    if(first==1)
+    {
+        first=0;
+        opening();
+    }
 
     while (!game_over && stage < stageCount) {
 
@@ -121,8 +128,9 @@ int main() {
         while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
             int chr = getchar();
             if (chr == 'q') {
-                game_over = 1;
-                break;
+                disable_raw_mode();
+                freeMap(); 
+                return 0;
             }
             if (chr == '\x1b') {
                 getchar(); // '['
@@ -138,20 +146,20 @@ int main() {
             }
         } 
 
-        if(game_over==1)
-        {
-            break;
-        }
-
         update_game(c);
         draw_game();
         delay(90);
 
 
-        if(user_Heart==0)
+        if (user_Heart == 0)
         {
-            game_overscr();
-            exit(0);
+            int re = game_overscr();
+            disable_raw_mode();
+            if (!re) {
+                freeMap();
+                return 0;
+            }
+            game_over = 1; 
         }
         
         if (map[stage][player_y][player_x] == 'E') {
@@ -173,15 +181,17 @@ int main() {
                 init_stage();
                 game_clear1(); // 첫 스테이지 클리어 메시지
             } else {
-                game_clear2(); // 마지막 스테이지 클리어
-                game_over = 1;
+                int re = game_clear2();
+                disable_raw_mode();
+                if (!re) {
+                    freeMap();
+                    return 0;
+                }
+                game_over=1;
             }
         }
     }
-
-    disable_raw_mode();
-    freeMap(); 
-    return 0;
+  }
 }
 
 void opening(){
@@ -715,7 +725,7 @@ void move_enemies() {
 }
 
 
-void game_overscr(){
+int game_overscr(){
     clrscr();
     printf("\n\n\n\n\n");
         printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
@@ -733,15 +743,11 @@ void game_overscr(){
     while (1) {
         c = getchar();
         if (c == 'y' || c == 'Y') {
-            stage = 0;
-            score = 0;
-            user_Heart = 3;
-            main();
-            return;
+            return 1;
         }
         if (c == 'n' || c == 'N') {
             printf("\n게임을 종료합니다.\n");
-            exit(0);
+            return 0;
         }
     }
 }
@@ -776,7 +782,7 @@ void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
     }
 }
 
-void game_clear2(){
+int game_clear2(){
     clrscr();
     printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
     printf("\n           ┃                                          ┃");
@@ -793,16 +799,11 @@ void game_clear2(){
     while (1) {
         c = getchar();
         if (c == 'y' || c == 'Y') {
-            stage = 0;
-            score = 0;
-            user_Heart = 3;
-            // init_stage();
-            main();
-            return;
+            return 1;
         }
         if (c == 'n' || c == 'N') {
             printf("\n게임을 종료합니다.\n");
-            exit(0);
+            return 0;
         }
     }
 }

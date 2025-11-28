@@ -91,6 +91,8 @@ usleep(ms * 1000); // Linux/macOS: 마이크로초 단위 1밀리초 = 1000 마�
 #endif
 }
 
+int first = 1; //처음 플레이 여부
+
 int main() {
 
     //한국어 로케일 설정, c언어 에서 한글 입출력을 정상적으로 처리하기 위해서 <수정된 부분>
@@ -100,8 +102,10 @@ int main() {
     #ifdef _WIN32
     system("chcp 65001");
     #endif
-    
-    opening();
+    if (first == 1){
+        first = 0;
+        opening();
+    }
     srand(time(NULL));
     enable_raw_mode();
     loadMap();
@@ -213,26 +217,30 @@ void gotoxy(int x, int y){
     fflush(stdout);
 }
 
-void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
-    switch(sel){
-        case 1: //수정됨 hp 감소시
-        printf("\a");
-        printf("\a");
+void beepsound(int sel) { //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
+    switch (sel) {
+    case 1: //수정됨 hp 감소시
+        for (int i = 0; i < 3; i++) {
+            printf("\a");
+            fflush(stdout);
+            delay(30);
+        }
+        break;
+
+    case 2: //수정됨 점프
         printf("\a");
         fflush(stdout);
         break;
 
-        case 2: //수정됨 점프, 사다리 이동시
-        printf("\a");
-        fflush(stdout);
+    case 3: //코인 획득
+        for (int i = 0; i < 2; i++) {
+            printf("\a");
+            fflush(stdout);
+            delay(30);
+        }
         break;
 
-        case 3:
-        printf("\a"); //수정됨 스테이지 이동시
-        printf("\a");
-        fflush(stdout);
-
-        default:
+    default:
         return;
     }
 }
@@ -242,13 +250,30 @@ void beepsound(int sel){ //수정됨 추가기능2 리눅스는 헤더파일 추
 void beepsound(int sel){
     switch(sel){
         case 1:
-        beep();
+        Beep(900, 150);
+        delay(30);
+        Beep(700, 150);
+        delay(30);
+        Beep(500, 150);
+        delay(30);
+        Beep(350, 200);
+        delay(30);
         break;
-        
+
         case 2:
-        beep();
+        Beep(900, 200);
+        delay(30);
+        Beep(1200, 200);
         break;
-        
+
+        case 3:
+        Beep(1300, 150);
+        delay(30);
+        Beep(1600, 150);
+        delay(150);
+        Beep(2000, 200);
+        delay(30);
+        break;
 }
 
 */
@@ -278,7 +303,6 @@ void enable_raw_mode() {
     SetConsoleMode(hStdin, mode);
 
     #else
-
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -533,6 +557,7 @@ void draw_game(void) {
 
 // 게임 상태 업데이트
 void update_game(char input) {
+    check_collisions();
     move_player(input);
     move_enemies();
     check_collisions();
@@ -544,6 +569,7 @@ void getCoin(int player_x, int player_y) {//점프하는 도중에도 코인을 
         if (!coins[i].collected && player_x == coins[i].x && player_y == coins[i].y) {
             coins[i].collected = 1;
             score += 20;
+            beepsound(3);
         }
     }
 }
@@ -571,6 +597,7 @@ void move_player(char input) {
     if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
         if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
             is_jumping = 1;
+            beepsound(2);
             velocity_y = -2;
         }
     }
@@ -604,6 +631,7 @@ void move_player(char input) {
 
                 if (tile == 'X') {
                     user_Heart--;
+                    beepsound(1);
                     init_stage();
                     return;  
                 }
@@ -660,7 +688,6 @@ void move_player(char input) {
     if (player_y >= mapHeight[stage]) init_stage();
 }
 
-
 // 적 이동 로직
 void move_enemies() {
     for (int i = 0; i < enemy_count; i++) {
@@ -675,9 +702,19 @@ void move_enemies() {
 
 
 void game_overscr(){
-    printf("\x1b[2J\x1b[H");
-    printf("gameover\n");
-    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
+    clrscr();
+    printf("\n\n\n\n\n");
+        printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                 GAME OVER                ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃              Press Y to restart          ┃");
+        printf("\n           ┃                  N to quit               ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┃                                          ┃");
+        printf("\n           ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     char c;
     while (1) {
         c = getchar();
@@ -696,10 +733,18 @@ void game_overscr(){
 }
 
 void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
-    printf("\x1b[2J\x1b[H");
-    printf("첫 번째 스테이지를 클리어했습니다!\n");
-    printf("현재 점수: %d\n", score);
-    printf("다음 스테이지를 시작하시겠습니까? 네(y),아니요(n)");
+    clrscr();
+    printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃             STAGE1 COMPLETE!             ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                SCORE :   %3d             ┃", score);
+    printf("\n           ┃          PRESS Y TO PLAY STAGE 2         ┃");
+    printf("\n           ┃                 N TO QUIT                ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     char c;
     while (1) {
         c = getchar();
@@ -718,10 +763,18 @@ void game_clear1(){ // 첫 번째 스테이지 클리어 화면 출력 구현
 }
 
 void game_clear2(){
-    printf("\x1b[2J\x1b[H");
-    printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
-    printf("최종 점수: %d\n", score);
-    printf("다시 게임을 시작하시겠습니까? 네(y),아니요(n)");
+    clrscr();
+    printf("\n           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                GAME CLEAR!               ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┃                SCORE :   %3d             ┃", score);
+    printf("\n           ┃             PRESS Y TO RESTART           ┃");
+    printf("\n           ┃                 N TO QUIT                ┃");
+    printf("\n           ┃                                          ┃");
+    printf("\n           ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     char c;
     while (1) {
         c = getchar();
@@ -746,6 +799,7 @@ void check_collisions() {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             score = (score > 50) ? score - 50 : 0;
             user_Heart--;
+            beepsound(1);
             init_stage();
             return;
         }

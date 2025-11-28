@@ -133,8 +133,9 @@ int main() {
         while (_kbhit()) {  
             int chr = _getch();
             if (chr == 'q') {
-                game_over = 1;
-                break;
+                disable_raw_mode();
+                freeMap(); 
+                return 0;
             }   
             if (chr == 0 || chr == 224) { // 방향키 처리 
                 chr = _getch();

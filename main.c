@@ -81,6 +81,7 @@ void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
+void freeMap();
 
 //delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
 void delay(int ms) {
@@ -179,6 +180,7 @@ int main() {
     }
 
     disable_raw_mode();
+    freeMap(); 
     return 0;
 }
 
@@ -421,6 +423,17 @@ void fillMap(FILE *file) {
         memcpy(map[s][r], line, len); 
         r++;
     }
+}
+
+void freeMap(void) {
+    for (int s = 0; s < stageCount; s++) {
+        for (int y = 0; y < mapHeight[s]; y++) {
+            free(map[s][y]);
+        }
+        free(map[s]);
+    }
+        free(map);  
+        map = NULL;
 }
 
 

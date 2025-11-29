@@ -75,7 +75,7 @@ int game_overscr();
 int game_clear1();
 int game_clear2();
 int kbhit();
-void getCoin();
+void getCoin(int player_x, int player_y);
 
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동

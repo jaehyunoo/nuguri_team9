@@ -264,34 +264,44 @@ void gotoxy(int x, int y){
     fflush(stdout);
 }
 
-void beepsound(int sel) { //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
+void beepsound(int sel) {
+#ifdef _WIN32
+    // Windows: Beep API
     switch (sel) {
-    case 1: //수정됨 hp 감소시
-        for (int i = 0; i < 3; i++) {
-            printf("\a");
-            fflush(stdout);
-            delay(30);
-        }
-        break;
-
-    case 2: //수정됨 점프
-        printf("\a");
-        fflush(stdout);
-        break;
-
-    case 3: //코인 획득
-        for (int i = 0; i < 2; i++) {
-            printf("\a");
-            fflush(stdout);
-            delay(30);
-        }
-        break;
-
-    default:
-        return;
+    case 1: Beep(700, 120); break;  // HP 감소
+    case 2: Beep(1000, 120); break; // 점프
+    case 3: Beep(1300, 120); break; // 코인
     }
+#elif defined(__APPLE__)
+    // macOS: afplay로 시스템 사운드 재생
+    const char *sd = NULL;
+    switch (sel) {
+    case 1: sd = "/System/Library/Sounds/Basso.aiff"; break;
+    case 2: sd = "/System/Library/Sounds/Pop.aiff";   break;
+    case 3: sd = "/System/Library/Sounds/Glass.aiff"; break;
+    }
+    if (sd) {
+        char c[256];
+        snprintf(c, sizeof(c),
+                 "afplay \"%s\" >/dev/null 2>&1 &",
+                 sd);
+        system(c);
+    }
+#else
+    // Linux 등: 터미널 벨
+    int repeat = 1;
+    switch (sel) {
+    case 1: repeat = 3; break;
+    case 2: repeat = 1; break;
+    case 3: repeat = 2; break;
+    }
+    for (int i = 0; i < repeat; i++) {
+        fputc('\a', stdout);
+        fflush(stdout);
+        delay(40);
+    }
+#endif
 }
-
 /*
 윈도우 버전 window.h 필요
 void beepsound(int sel){

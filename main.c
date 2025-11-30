@@ -633,6 +633,9 @@ void getCoin(int player_x, int player_y) {//점프하는 도중에도 코인을 
     }
 }
 
+
+int jumpLadderTop = 0;   //기존의 오류로 인해 사다리에 있기만 하면 위에 벽을통과 그래서 사다리 가장 위에 있을때만 점프가능
+
 // 플레이어 이동 로직
 void move_player(char input) {
     int next_x = player_x, next_y = player_y;
@@ -653,11 +656,19 @@ void move_player(char input) {
                                                                                             //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
 
     
-    if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
+    if (input == ' ') {//점프하기위해서 ' '가 입력된 경우 새로 갱신된 floor_title을 활용
         if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
             is_jumping = 1;
             beepsound(2);
             velocity_y = -2;
+
+            if (map[stage][player_y][player_x] == 'H' && //사다리 끝에 있을때만 오를수있도록 jumpLadderTop전역변수 선언
+                player_y > 0 &&
+                map[stage][player_y - 1][player_x] == '#') {
+                jumpLadderTop = 1;
+            } else {
+                jumpLadderTop= 0;
+            }
         }
     }
     
@@ -696,11 +707,12 @@ void move_player(char input) {
                 }
 
        
-                if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
-                    if (on_ladder && y + 1 < mapHeight[stage] && 
-                        map[stage][y + 1][player_x] == 'H') {
-                            continue;
-                        }
+                if (tile == '#') {
+                        //  사다리 맨끝에서 점프했을 때 바로 위에 #이 있는경우만 사다리를 오를수있음
+                    if (jumpLadderTop) {//사다리 끝에 있는경우만오름
+                          continue;  
+                    }
+
                     next_y = y + 1;  
                     break;
                 }

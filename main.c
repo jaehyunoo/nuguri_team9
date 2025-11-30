@@ -437,6 +437,14 @@ void allocateMap(void) {
         map[s] = (char **)malloc(mapHeight[s] * sizeof(char *));
         if (!map[s]) {
             perror("map[s]쪽 malloc 실패");
+            // 이전에 할당한 이전 스테이지 메모리 해제
+            for (int i = 0; i < s; i++) {
+                for (int y = 0; y < mapHeight[i]; y++) {
+                    free(map[i][y]);
+                }
+                free(map[i]);
+            }
+            free(map);
             exit(1);
         }
 
@@ -444,6 +452,18 @@ void allocateMap(void) {
             map[s][y] = (char *)malloc(mapWidth[s] + 1);
             if (!map[s][y]) {
                 perror("map[s][y]쪽 malloc 실패");
+                // 이전에 할당한 행 해제
+                for (int yy = 0; yy < y; yy++) {
+                    free(map[s][yy]);
+                }
+                // 이전 스테이지 전체 메모리 해제
+                for (int i = 0; i < s; i++) {
+                    for (int yy = 0; yy < mapHeight[i]; yy++) {
+                        free(map[i][yy]);
+                    }
+                    free(map[i]);
+                }
+                free(map);
                 exit(1);
             }
 

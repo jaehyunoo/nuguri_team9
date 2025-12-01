@@ -779,7 +779,7 @@ void move_player(char input) {
             velocity_y = 0;
         }
     } else {
-        if (floor_tile != '#' && floor_tile != 'H') {
+        if (!on_ladder && floor_tile != '#' && floor_tile != 'H') {
              if (player_y + 1 < mapHeight[stage]) player_y++;
              else init_stage();
             }

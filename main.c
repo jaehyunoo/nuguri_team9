@@ -77,7 +77,7 @@ int game_clear2();
 int kbhit();
 void getCoin(int player_x, int player_y);
 
-void opening(); //수정됨 게임 시작시 화면 띄우기
+int opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
@@ -118,7 +118,11 @@ int main() {
     if(first==1)
     {
         first=0;
-        opening();
+        if (!opening()) {    //처음 오프닝때 p를 제외하고 누를경우 exit(0)가 바로호출되어 오류가생김(disable_raw_mode()실행못하고 맵을 freemap못함
+            disable_raw_mode();
+            freeMap();
+            return 0;
+        }
     }
     clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
 
@@ -226,10 +230,11 @@ int main() {
             clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
         }
     }
+    disable_raw_mode();//재시작할때마다 disable_raw_mode실행
   }
 }
 
-void opening(){
+int opening(){
     clrscr();
     while(1){
         int ch=0;
@@ -248,9 +253,9 @@ void opening(){
         gotoxy(30, 15);
         ch = getchar();
         if (ch == 'P' || ch == 'p')
-            return;
+            return 1;
         else 
-            exit(0);
+            return 0;
     }
 }
 

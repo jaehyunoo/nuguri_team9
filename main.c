@@ -75,7 +75,7 @@ int game_overscr();
 int game_clear1();
 int game_clear2();
 int kbhit();
-void getCoin();
+void getCoin(int player_x, int player_y);
 
 void opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
@@ -120,12 +120,37 @@ int main() {
         first=0;
         opening();
     }
+    clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
 
     init_stage();
 
     while (!game_over && stage < stageCount) {
 
         char c = '\0';
+
+         // 윈도우 리눅스 키보드 입력 분기<수정된 부분>
+    #ifdef _WIN32
+        while (_kbhit()) {  
+            int chr = _getch();
+            if (chr == 'q') {
+                disable_raw_mode();
+                freeMap(); 
+                return 0;
+            }   
+            if (chr == 0 || chr == 224) { // 방향키 처리 
+                chr = _getch();
+                switch (chr) { 
+                case 72: c = 'w'; break; // Up
+                case 80: c = 's'; break; // Down
+                case 75: c = 'a'; break; // Left
+                case 77: c = 'd'; break; // Right
+            }
+        } 
+        else {  
+        c = chr;
+        }
+    }
+    #else
         while (kbhit()) {//kbhit를 while에 넣어 한프레임당 키들이 즉각반응하고 남은키는 버려질수있도록 구현
             int chr = getchar();
             if (chr == 'q') {
@@ -145,7 +170,8 @@ int main() {
             else {
             c = chr;
             }
-        } 
+        }
+        #endif 
 
         update_game(c);
         draw_game();
@@ -197,6 +223,7 @@ int main() {
                 }
                 game_over=1;
             }
+            clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
         }
     }
   }
@@ -237,34 +264,44 @@ void gotoxy(int x, int y){
     fflush(stdout);
 }
 
-void beepsound(int sel) { //수정됨 추가기능2 리눅스는 헤더파일 추가 X, 윈도우는 window.h 필요. 추가 예정
+void beepsound(int sel) {
+#ifdef _WIN32
+    // Windows: Beep API
     switch (sel) {
-    case 1: //수정됨 hp 감소시
-        for (int i = 0; i < 3; i++) {
-            printf("\a");
-            fflush(stdout);
-            delay(30);
-        }
-        break;
-
-    case 2: //수정됨 점프
-        printf("\a");
-        fflush(stdout);
-        break;
-
-    case 3: //코인 획득
-        for (int i = 0; i < 2; i++) {
-            printf("\a");
-            fflush(stdout);
-            delay(30);
-        }
-        break;
-
-    default:
-        return;
+    case 1: Beep(700, 120); break;  // HP 감소
+    case 2: Beep(1000, 120); break; // 점프
+    case 3: Beep(1300, 120); break; // 코인
     }
+#elif defined(__APPLE__)
+    // macOS: afplay로 시스템 사운드 재생
+    const char *sd = NULL;
+    switch (sel) {
+    case 1: sd = "/System/Library/Sounds/Basso.aiff"; break;
+    case 2: sd = "/System/Library/Sounds/Pop.aiff";   break;
+    case 3: sd = "/System/Library/Sounds/Glass.aiff"; break;
+    }
+    if (sd) {
+        char c[256];
+        snprintf(c, sizeof(c),
+                 "afplay \"%s\" >/dev/null 2>&1 &",
+                 sd);
+        system(c);
+    }
+#else
+    // Linux 등: 터미널 벨
+    int repeat = 1;
+    switch (sel) {
+    case 1: repeat = 3; break;
+    case 2: repeat = 1; break;
+    case 3: repeat = 2; break;
+    }
+    for (int i = 0; i < repeat; i++) {
+        fputc('\a', stdout);
+        fflush(stdout);
+        delay(40);
+    }
+#endif
 }
-
 /*
 윈도우 버전 window.h 필요
 void beepsound(int sel){
@@ -400,6 +437,14 @@ void allocateMap(void) {
         map[s] = (char **)malloc(mapHeight[s] * sizeof(char *));
         if (!map[s]) {
             perror("map[s]쪽 malloc 실패");
+            // 이전에 할당한 이전 스테이지 메모리 해제
+            for (int i = 0; i < s; i++) {
+                for (int y = 0; y < mapHeight[i]; y++) {
+                    free(map[i][y]);
+                }
+                free(map[i]);
+            }
+            free(map);
             exit(1);
         }
 
@@ -407,6 +452,18 @@ void allocateMap(void) {
             map[s][y] = (char *)malloc(mapWidth[s] + 1);
             if (!map[s][y]) {
                 perror("map[s][y]쪽 malloc 실패");
+                // 이전에 할당한 행 해제
+                for (int yy = 0; yy < y; yy++) {
+                    free(map[s][yy]);
+                }
+                // 이전 스테이지 전체 메모리 해제
+                for (int i = 0; i < s; i++) {
+                    for (int yy = 0; yy < mapHeight[i]; yy++) {
+                        free(map[i][yy]);
+                    }
+                    free(map[i]);
+                }
+                free(map);
                 exit(1);
             }
 
@@ -606,6 +663,9 @@ void getCoin(int player_x, int player_y) {//점프하는 도중에도 코인을 
     }
 }
 
+
+int jumpLadderTop = 0;   //기존의 오류로 인해 사다리에 있기만 하면 위에 벽을통과 그래서 사다리 가장 위에 있을때만 점프가능
+
 // 플레이어 이동 로직
 void move_player(char input) {
     int next_x = player_x, next_y = player_y;
@@ -626,11 +686,19 @@ void move_player(char input) {
                                                                                             //한타이밍 늦게 바닥#을 확인해 벽을 뚫어버리는 오류가 발생함 그래서 밑에 floor_title을 초기화시켜준다.
 
     
-    if (input == ' ') {//기존의 switch에 있던 ' '인식 부분을 새로운 floor_title로 갱신해서 점프문 실행
+    if (input == ' ') {//점프하기위해서 ' '가 입력된 경우 새로 갱신된 floor_title을 활용
         if (!is_jumping && (floor_tile == '#' || floor_tile == 'H' || on_ladder)) {
             is_jumping = 1;
             beepsound(2);
             velocity_y = -2;
+
+            if (map[stage][player_y][player_x] == 'H' && //사다리 끝에 있을때만 오를수있도록 jumpLadderTop전역변수 선언
+                player_y > 0 &&
+                map[stage][player_y - 1][player_x] == '#') {
+                jumpLadderTop = 1;
+            } else {
+                jumpLadderTop= 0;
+            }
         }
     }
     
@@ -669,11 +737,12 @@ void move_player(char input) {
                 }
 
        
-                if (tile == '#') { //-> 이부분 보완 사다리위에서 이전의 기능으로는 충돌되서 점프가안됨
-                    if (on_ladder && y + 1 < mapHeight[stage] && 
-                        map[stage][y + 1][player_x] == 'H') {
-                            continue;
-                        }
+                if (tile == '#') {
+                        //  사다리 맨끝에서 점프했을 때 바로 위에 #이 있는경우만 사다리를 오를수있음
+                    if (jumpLadderTop) {//사다리 끝에 있는경우만오름
+                          continue;  
+                    }
+
                     next_y = y + 1;  
                     break;
                 }
@@ -710,7 +779,7 @@ void move_player(char input) {
             velocity_y = 0;
         }
     } else {
-        if (floor_tile != '#' && floor_tile != 'H') {
+        if (!on_ladder && floor_tile != '#' && floor_tile != 'H') {
              if (player_y + 1 < mapHeight[stage]) player_y++;
              else init_stage();
             }

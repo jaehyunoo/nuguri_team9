@@ -77,10 +77,11 @@ int game_clear2();
 int kbhit();
 void getCoin(int player_x, int player_y);
 
-void opening(); //수정됨 게임 시작시 화면 띄우기
+int opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
+void freeStage(int s);
 void freeMap();
 
 //delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
@@ -118,7 +119,11 @@ int main() {
     if(first==1)
     {
         first=0;
-        opening();
+        if (!opening()) {    //처음 오프닝때 p를 제외하고 누를경우 exit(0)가 바로호출되어 오류가생김(disable_raw_mode()실행못하고 맵을 freemap못함
+            disable_raw_mode();
+            freeMap();
+            return 0;
+        }
     }
     clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
 
@@ -190,20 +195,11 @@ int main() {
         }
         
         if (map[stage][player_y][player_x] == 'E') {
-            // stage++;
+
             score += 100;
-            /*
-        if (map[stage][player_y][player_x] == 'E') {
-            stage++;
-            score += 100;
-            if (stage < MAX_STAGES) {
-                init_stage();
-            } else {
-                game_over = 1;
-                game_clear();
-            }
-            */
+
             if (stage + 1 < stageCount) {
+                freeStage(stage);
                 stage++;
                 init_stage();
                 int re = game_clear1(); // 첫 스테이지 클리어 메시지
@@ -226,10 +222,11 @@ int main() {
             clrscr();// 초기화면 클리어 <수정된 부분>, 리눅스는 이상없으나 윈도우 더블버퍼링이 변경사항만 수정하도록 되어있어 초기화면 잔상이 남아 직접 클리어함 
         }
     }
+    disable_raw_mode();//재시작할때마다 disable_raw_mode실행
   }
 }
 
-void opening(){
+int opening(){
     clrscr();
     while(1){
         int ch=0;
@@ -248,9 +245,9 @@ void opening(){
         gotoxy(30, 15);
         ch = getchar();
         if (ch == 'P' || ch == 'p')
-            return;
+            return 1;
         else 
-            exit(0);
+            return 0;
     }
 }
 
@@ -302,38 +299,8 @@ void beepsound(int sel) {
     }
 #endif
 }
-/*
-윈도우 버전 window.h 필요
-void beepsound(int sel){
-    switch(sel){
-        case 1:
-        Beep(900, 150);
-        delay(30);
-        Beep(700, 150);
-        delay(30);
-        Beep(500, 150);
-        delay(30);
-        Beep(350, 200);
-        delay(30);
-        break;
 
-        case 2:
-        Beep(900, 200);
-        delay(30);
-        Beep(1200, 200);
-        break;
 
-        case 3:
-        Beep(1300, 150);
-        delay(30);
-        Beep(1600, 150);
-        delay(150);
-        Beep(2000, 200);
-        delay(30);
-        break;
-}
-
-*/
 
 
 
@@ -437,14 +404,7 @@ void allocateMap(void) {
         map[s] = (char **)malloc(mapHeight[s] * sizeof(char *));
         if (!map[s]) {
             perror("map[s]쪽 malloc 실패");
-            // 이전에 할당한 이전 스테이지 메모리 해제
-            for (int i = 0; i < s; i++) {
-                for (int y = 0; y < mapHeight[i]; y++) {
-                    free(map[i][y]);
-                }
-                free(map[i]);
-            }
-            free(map);
+            freeMap();
             exit(1);
         }
 
@@ -452,18 +412,7 @@ void allocateMap(void) {
             map[s][y] = (char *)malloc(mapWidth[s] + 1);
             if (!map[s][y]) {
                 perror("map[s][y]쪽 malloc 실패");
-                // 이전에 할당한 행 해제
-                for (int yy = 0; yy < y; yy++) {
-                    free(map[s][yy]);
-                }
-                // 이전 스테이지 전체 메모리 해제
-                for (int i = 0; i < s; i++) {
-                    for (int yy = 0; yy < mapHeight[i]; yy++) {
-                        free(map[i][yy]);
-                    }
-                    free(map[i]);
-                }
-                free(map);
+                freeMap();
                 exit(1);
             }
 
@@ -500,15 +449,30 @@ void fillMap(FILE *file) {
     }
 }
 
-void freeMap(void) {
-    for (int s = 0; s < stageCount; s++) {
-        for (int y = 0; y < mapHeight[s]; y++) {
-            free(map[s][y]);
-        }
-        free(map[s]);
+// 스테이지별 해제
+void freeStage(int s) {
+    if (!map[s]) return;
+
+    for (int y = 0; y < mapHeight[s]; y++) {
+        free(map[s][y]);
     }
-        free(map);  
-        map = NULL;
+    free(map[s]);
+    map[s] = NULL;
+}
+
+// 전체해제
+void freeMap() {
+    if (!map) return;
+
+    
+    for (int s = 0; s < stageCount; s++) {
+        if (map[s] != NULL) {
+            freeStage(s);
+        }
+    }
+
+    free(map);    
+    map = NULL;
 }
 
 
@@ -778,7 +742,7 @@ void move_player(char input) {
             velocity_y = 0;
         }
     } else {
-        if (floor_tile != '#' && floor_tile != 'H') {
+        if (!on_ladder && floor_tile != '#' && floor_tile != 'H') {
              if (player_y + 1 < mapHeight[stage]) player_y++;
              else init_stage();
             }

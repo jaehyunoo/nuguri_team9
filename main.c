@@ -651,7 +651,6 @@ void draw_game(void) {
 
 // 게임 상태 업데이트
 void update_game(char input) {
-    check_collisions();
     move_player(input);
     move_enemies();
     check_collisions();

@@ -278,19 +278,16 @@ void beepsound(int sel) {
     case 3: Beep(1300, 120); break; // 코인
     }
 #elif defined(__APPLE__)
-    // macOS: afplay로 시스템 사운드 재생
-    const char *sd = NULL;
     switch (sel) {
-    case 1: sd = "/System/Library/Sounds/Basso.aiff"; break;
-    case 2: sd = "/System/Library/Sounds/Pop.aiff";   break;
-    case 3: sd = "/System/Library/Sounds/Glass.aiff"; break;
-    }
-    if (sd) {
-        char c[256];
-        snprintf(c, sizeof(c),
-                 "afplay \"%s\" >/dev/null 2>&1 &",
-                 sd);
-        system(c);
+    case 1:
+        system("afplay \"/System/Library/Sounds/Basso.aiff\" >/dev/null 2>&1 &");
+        break;
+    case 2:
+        system("afplay \"/System/Library/Sounds/Pop.aiff\" >/dev/null 2>&1 &");
+        break;
+    case 3:
+        system("afplay \"/System/Library/Sounds/Glass.aiff\" >/dev/null 2>&1 &");
+        break;
     }
 #else
     // Linux 등: 터미널 벨

@@ -194,19 +194,8 @@ int main() {
         }
         
         if (map[stage][player_y][player_x] == 'E') {
-            // stage++;
             score += 100;
-            /*
-        if (map[stage][player_y][player_x] == 'E') {
-            stage++;
-            score += 100;
-            if (stage < MAX_STAGES) {
-                init_stage();
-            } else {
-                game_over = 1;
-                game_clear();
-            }
-            */
+           
             if (stage + 1 < stageCount) {
                 stage++;
                 init_stage();
@@ -278,16 +267,19 @@ void beepsound(int sel) {
     case 3: Beep(1300, 120); break; // 코인
     }
 #elif defined(__APPLE__)
+    // macOS: afplay로 시스템 사운드 재생
+    const char *sd = NULL;
     switch (sel) {
-    case 1:
-        system("afplay \"/System/Library/Sounds/Basso.aiff\" >/dev/null 2>&1 &");
-        break;
-    case 2:
-        system("afplay \"/System/Library/Sounds/Pop.aiff\" >/dev/null 2>&1 &");
-        break;
-    case 3:
-        system("afplay \"/System/Library/Sounds/Glass.aiff\" >/dev/null 2>&1 &");
-        break;
+    case 1: sd = "/System/Library/Sounds/Basso.aiff"; break;
+    case 2: sd = "/System/Library/Sounds/Pop.aiff";   break;
+    case 3: sd = "/System/Library/Sounds/Glass.aiff"; break;
+    }
+    if (sd) {
+        char c[256];
+        snprintf(c, sizeof(c),
+                 "afplay \"%s\" >/dev/null 2>&1 &",
+                 sd);
+        system(c);
     }
 #else
     // Linux 등: 터미널 벨
@@ -304,38 +296,7 @@ void beepsound(int sel) {
     }
 #endif
 }
-/*
-윈도우 버전 window.h 필요
-void beepsound(int sel){
-    switch(sel){
-        case 1:
-        Beep(900, 150);
-        delay(30);
-        Beep(700, 150);
-        delay(30);
-        Beep(500, 150);
-        delay(30);
-        Beep(350, 200);
-        delay(30);
-        break;
 
-        case 2:
-        Beep(900, 200);
-        delay(30);
-        Beep(1200, 200);
-        break;
-
-        case 3:
-        Beep(1300, 150);
-        delay(30);
-        Beep(1600, 150);
-        delay(150);
-        Beep(2000, 200);
-        delay(30);
-        break;
-}
-
-*/
 
 
 

@@ -81,7 +81,6 @@ int opening(); //수정됨 게임 시작시 화면 띄우기
 void clrscr(); //수정됨 화면 지우고 (1,1)로 커서 이동
 void gotoxy(int x, int y); // 수정됨 화면 그대로 (x,y)로 이동
 void beepsound(int sel);
-void freeStage(int s);
 void freeMap();
 
 //delay함수 윈도우,리눅스용 분기 나눔<새로 추가한 함수>
@@ -195,11 +194,9 @@ int main() {
         }
         
         if (map[stage][player_y][player_x] == 'E') {
-
             score += 100;
-
+           
             if (stage + 1 < stageCount) {
-                freeStage(stage);
                 stage++;
                 init_stage();
                 int re = game_clear1(); // 첫 스테이지 클리어 메시지
@@ -299,7 +296,6 @@ void beepsound(int sel) {
     }
 #endif
 }
-
 
 
 
@@ -404,7 +400,14 @@ void allocateMap(void) {
         map[s] = (char **)malloc(mapHeight[s] * sizeof(char *));
         if (!map[s]) {
             perror("map[s]쪽 malloc 실패");
-            freeMap();
+            // 이전에 할당한 이전 스테이지 메모리 해제
+            for (int i = 0; i < s; i++) {
+                for (int y = 0; y < mapHeight[i]; y++) {
+                    free(map[i][y]);
+                }
+                free(map[i]);
+            }
+            free(map);
             exit(1);
         }
 
@@ -412,7 +415,18 @@ void allocateMap(void) {
             map[s][y] = (char *)malloc(mapWidth[s] + 1);
             if (!map[s][y]) {
                 perror("map[s][y]쪽 malloc 실패");
-                freeMap();
+                // 이전에 할당한 행 해제
+                for (int yy = 0; yy < y; yy++) {
+                    free(map[s][yy]);
+                }
+                // 이전 스테이지 전체 메모리 해제
+                for (int i = 0; i < s; i++) {
+                    for (int yy = 0; yy < mapHeight[i]; yy++) {
+                        free(map[i][yy]);
+                    }
+                    free(map[i]);
+                }
+                free(map);
                 exit(1);
             }
 
@@ -449,30 +463,15 @@ void fillMap(FILE *file) {
     }
 }
 
-// 스테이지별 해제
-void freeStage(int s) {
-    if (!map[s]) return;
-
-    for (int y = 0; y < mapHeight[s]; y++) {
-        free(map[s][y]);
-    }
-    free(map[s]);
-    map[s] = NULL;
-}
-
-// 전체해제
-void freeMap() {
-    if (!map) return;
-
-    
+void freeMap(void) {
     for (int s = 0; s < stageCount; s++) {
-        if (map[s] != NULL) {
-            freeStage(s);
+        for (int y = 0; y < mapHeight[s]; y++) {
+            free(map[s][y]);
         }
+        free(map[s]);
     }
-
-    free(map);    
-    map = NULL;
+        free(map);  
+        map = NULL;
 }
 
 

@@ -1,8 +1,3 @@
----
-title: '너구리게임 '
-
----
-
 #  너구리게임 프로젝트 보고서
 ## 깃허브 레포지토리 주소 https://github.com/jaehyunoo/nuguri_team9
 
@@ -483,7 +478,7 @@ int game_clear2(){
 
 #### 5.3.6 게임 오버 구현
 
-```c
+
 ```c   
         if (user_Heart == 0)
         {
